@@ -12,7 +12,7 @@ export default function PageLayout({ children, className }: PageLayoutProps) {
     <div className="min-h-screen bg-background flex">
       <SidebarNav />
       <main className="flex-1 ml-16 md:ml-64 p-6">
-        <div className={cn("salon-container", className)}>
+        <div className={cn("salon-container font-poppins", className)}>
           {children}
         </div>
       </main>

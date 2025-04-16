@@ -28,7 +28,9 @@ export default function AppointmentsPage() {
     <AppointmentProvider>
       <PageLayout>
         <div className="space-y-6">
-          <h1 className="section-heading">Appointment Scheduler</h1>
+          <h1 className="section-heading text-4xl md:text-5xl font-playfair font-semibold text-salon-800 mb-8">
+            Appointment Scheduler
+          </h1>
           <AppointmentCalendar 
             onAddAppointment={handleAddAppointment} 
             onViewAppointment={handleViewAppointment}
