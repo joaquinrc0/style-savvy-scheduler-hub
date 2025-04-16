@@ -72,10 +72,16 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
           
           if (data.clientId) {
             updatedAppointment.clientId = data.clientId;
+            // Preserve client name in the title
+            const servicePart = updatedAppointment.title.split(' - ')[1] || '';
+            updatedAppointment.title = `${appointment.client.name} - ${servicePart}`;
           }
           
           if (data.serviceId) {
             updatedAppointment.serviceId = data.serviceId;
+            // Preserve service name in the title
+            const clientPart = updatedAppointment.title.split(' - ')[0] || '';
+            updatedAppointment.title = `${clientPart} - ${appointment.service.name}`;
           }
           
           if (data.stylistId) {

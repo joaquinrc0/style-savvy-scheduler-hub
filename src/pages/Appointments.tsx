@@ -21,7 +21,7 @@ export default function AppointmentsPage() {
 
   const handleCloseForm = () => {
     setIsFormOpen(false);
-    setSelectedAppointmentId(undefined);
+    // Don't reset selectedAppointmentId here to preserve it during form close
   };
 
   return (
