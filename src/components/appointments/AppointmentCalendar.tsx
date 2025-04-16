@@ -1,14 +1,14 @@
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useAppointments } from "@/contexts/AppointmentContext";
-import { format, startOfWeek, endOfWeek, startOfDay, endOfDay, addDays, isSameDay } from "date-fns";
+import { format, startOfWeek, endOfWeek, startOfDay, endOfDay, addDays, isSameDay, addHours, isWithinInterval, parseISO, setHours, setMinutes } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { AppointmentStatus } from "@/types/appointment";
-import { useNavigate } from "react-router-dom";
+import { ChevronLeft, ChevronRight, Plus, Clock, MoveHorizontal } from "lucide-react";
+import { AppointmentStatus, Appointment } from "@/types/appointment";
+import { useToast } from "@/hooks/use-toast";
 
 interface AppointmentCalendarProps {
   onAddAppointment: () => void;
@@ -22,11 +22,18 @@ const statusColors: Record<AppointmentStatus, string> = {
   'no-show': 'bg-yellow-500',
 };
 
+// Business hours
+const START_HOUR = 9; // 9 AM
+const END_HOUR = 18; // 6 PM
+const HOUR_HEIGHT = 60; // Height in pixels for 1 hour
+
 export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: AppointmentCalendarProps) {
-  const { appointments } = useAppointments();
+  const { appointments, updateAppointment } = useAppointments();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [view, setView] = useState<'day' | 'week'>('day');
-  const navigate = useNavigate();
+  const [draggedAppointment, setDraggedAppointment] = useState<Appointment | null>(null);
+  const weekGridRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   const handleAddAppointment = () => {
     onAddAppointment();
@@ -64,18 +71,112 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
     return days;
   }, [selectedDate]);
 
-  const appointmentsByDay = useMemo(() => {
-    if (view === 'week') {
-      return weekDays.map(day => {
-        const dayStart = startOfDay(day);
-        const dayEnd = endOfDay(day);
-        return appointments.filter(
-          (appointment) => appointment.start >= dayStart && appointment.start <= dayEnd
-        );
-      });
+  const timeSlots = useMemo(() => {
+    const slots = [];
+    for (let hour = START_HOUR; hour <= END_HOUR; hour++) {
+      slots.push(hour);
     }
-    return [];
-  }, [appointments, weekDays, view]);
+    return slots;
+  }, []);
+
+  const handleDragStart = (appointment: Appointment, event: React.DragEvent) => {
+    setDraggedAppointment(appointment);
+    event.dataTransfer.setData('text/plain', appointment.id);
+    
+    // Create a ghost image for dragging
+    const ghost = document.createElement('div');
+    ghost.classList.add('bg-salon-500', 'opacity-70', 'text-white', 'p-2', 'rounded');
+    ghost.textContent = appointment.title;
+    ghost.style.width = '150px';
+    document.body.appendChild(ghost);
+    event.dataTransfer.setDragImage(ghost, 75, 20);
+    
+    setTimeout(() => {
+      document.body.removeChild(ghost);
+    }, 0);
+  };
+
+  const handleDragOver = (event: React.DragEvent, day: Date, hour: number) => {
+    event.preventDefault();
+  };
+
+  const handleDrop = (event: React.DragEvent, day: Date, hour: number) => {
+    event.preventDefault();
+    if (!draggedAppointment) return;
+    
+    const appointmentId = event.dataTransfer.getData('text/plain');
+    
+    const newStart = new Date(day);
+    newStart.setHours(hour);
+    newStart.setMinutes(0);
+    newStart.setSeconds(0);
+    
+    const durationMs = draggedAppointment.end.getTime() - draggedAppointment.start.getTime();
+    const newEnd = new Date(newStart.getTime() + durationMs);
+    
+    // Calculate the end time of the business day
+    const endOfBusinessDay = new Date(day);
+    endOfBusinessDay.setHours(END_HOUR);
+    endOfBusinessDay.setMinutes(0);
+    endOfBusinessDay.setSeconds(0);
+    
+    // Check if appointment would end after business hours
+    if (newEnd > endOfBusinessDay) {
+      toast({
+        title: "Cannot move appointment",
+        description: "The appointment would end after business hours.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Update the appointment with new time
+    updateAppointment(appointmentId, {
+      date: newStart,
+      time: `${newStart.getHours()}:${newStart.getMinutes().toString().padStart(2, '0')}`,
+    });
+    
+    setDraggedAppointment(null);
+    
+    toast({
+      title: "Appointment moved",
+      description: `Moved to ${format(newStart, 'EEEE, MMMM d')} at ${format(newStart, 'h:mm a')}`,
+    });
+  };
+
+  // Position appointment correctly in week grid
+  const getAppointmentStyle = (appointment: Appointment) => {
+    const startHour = appointment.start.getHours();
+    const startMinutes = appointment.start.getMinutes();
+    const endHour = appointment.end.getHours();
+    const endMinutes = appointment.end.getMinutes();
+    
+    const startPosition = (startHour - START_HOUR) * HOUR_HEIGHT + (startMinutes / 60) * HOUR_HEIGHT;
+    const duration = (endHour - startHour) * HOUR_HEIGHT + ((endMinutes - startMinutes) / 60) * HOUR_HEIGHT;
+    
+    return {
+      top: `${startPosition}px`,
+      height: `${duration}px`,
+      width: 'calc(100% - 8px)',
+      left: '4px',
+      position: 'absolute' as const,
+    };
+  };
+
+  // Check if an appointment is on a specific day and hour
+  const isAppointmentAtTimeSlot = (appointment: Appointment, day: Date, hour: number) => {
+    const dayStart = startOfDay(day);
+    const timeSlotStart = addHours(dayStart, hour);
+    const timeSlotEnd = addHours(dayStart, hour + 1);
+    
+    return isWithinInterval(appointment.start, {
+      start: dayStart,
+      end: endOfDay(day)
+    }) && isWithinInterval(appointment.start, {
+      start: timeSlotStart,
+      end: timeSlotEnd
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -124,8 +225,13 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
 
         <Card className="md:col-span-3">
           <CardHeader className="pb-2">
-            <CardTitle>
+            <CardTitle className="flex items-center">
               {view === 'day' ? 'Day Schedule' : 'Week Schedule'}
+              {view === 'week' && (
+                <span className="ml-2 text-xs flex items-center text-muted-foreground">
+                  <MoveHorizontal className="h-3 w-3 mr-1" /> Drag to reschedule
+                </span>
+              )}
             </CardTitle>
             <CardDescription>
               {filteredAppointments.length} appointments {view === 'day' ? 'today' : 'this week'}
@@ -163,38 +269,91 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-7 gap-1">
-                {weekDays.map((day, index) => (
-                  <div key={index} className="space-y-1">
-                    <div className={`text-center p-1 mb-2 rounded-md ${isSameDay(day, new Date()) ? 'bg-salon-100 font-medium' : ''}`}>
-                      <div className="text-xs uppercase">{format(day, 'EEE')}</div>
-                      <div className={`text-sm ${isSameDay(day, new Date()) ? 'text-salon-700' : ''}`}>{format(day, 'd')}</div>
-                    </div>
-                    <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
-                      {appointmentsByDay[index].length > 0 ? (
-                        appointmentsByDay[index]
-                          .sort((a, b) => a.start.getTime() - b.start.getTime())
-                          .map((appointment) => (
-                            <div
-                              key={appointment.id}
-                              className="p-1 text-xs border rounded-sm hover:bg-accent cursor-pointer transition-colors"
-                              onClick={() => onViewAppointment(appointment.id)}
-                            >
-                              <div className="flex items-center gap-1">
-                                <div className={`w-2 h-2 rounded-full ${statusColors[appointment.status]}`} />
-                                <span className="truncate">{format(appointment.start, 'h:mm')}</span>
-                              </div>
-                              <div className="truncate font-medium">{appointment.title.split(' - ')[0]}</div>
-                            </div>
-                          ))
-                      ) : (
-                        <div className="text-center text-xs text-muted-foreground py-2">
-                          No appointments
-                        </div>
-                      )}
-                    </div>
+              <div className="relative">
+                {/* Week view header */}
+                <div className="grid grid-cols-8 border-b mb-2">
+                  <div className="text-center p-2 text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3 mx-auto" />
                   </div>
-                ))}
+                  {weekDays.map((day, index) => (
+                    <div 
+                      key={index} 
+                      className={`text-center p-2 ${isSameDay(day, new Date()) ? 'bg-salon-100 rounded-t-md' : ''}`}
+                    >
+                      <div className="text-xs uppercase font-medium">{format(day, 'EEE')}</div>
+                      <div className={`text-base ${isSameDay(day, new Date()) ? 'text-salon-700 font-medium' : ''}`}>
+                        {format(day, 'd')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Time grid */}
+                <div 
+                  className="grid grid-cols-8 relative overflow-y-auto max-h-[500px] scrollbar-thin scrollbar-thumb-salon-200"
+                  ref={weekGridRef}
+                  style={{ height: `${(END_HOUR - START_HOUR + 1) * HOUR_HEIGHT}px` }}
+                >
+                  {/* Time labels */}
+                  <div className="col-span-1 border-r">
+                    {timeSlots.map(hour => (
+                      <div 
+                        key={hour} 
+                        className="border-b text-xs text-right pr-2 text-muted-foreground"
+                        style={{ height: `${HOUR_HEIGHT}px`, lineHeight: `${HOUR_HEIGHT}px` }}
+                      >
+                        {hour === 12 ? '12 PM' : hour < 12 ? `${hour} AM` : `${hour-12} PM`}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Days columns */}
+                  {weekDays.map((day, dayIndex) => (
+                    <div 
+                      key={dayIndex} 
+                      className={`col-span-1 relative border-r ${isSameDay(day, new Date()) ? 'bg-salon-50' : ''}`}
+                    >
+                      {/* Hour cells */}
+                      {timeSlots.map(hour => (
+                        <div 
+                          key={hour}
+                          className="border-b border-dashed hover:bg-salon-50/50 transition-colors"
+                          style={{ height: `${HOUR_HEIGHT}px` }}
+                          onDragOver={(e) => handleDragOver(e, day, hour)}
+                          onDrop={(e) => handleDrop(e, day, hour)}
+                        />
+                      ))}
+                      
+                      {/* Appointments */}
+                      {appointments
+                        .filter(appt => 
+                          isSameDay(appt.start, day) && 
+                          appt.start.getHours() >= START_HOUR && 
+                          appt.start.getHours() < END_HOUR
+                        )
+                        .map(appointment => (
+                          <div 
+                            key={appointment.id}
+                            className={`absolute rounded-md px-1 py-1 text-white overflow-hidden cursor-pointer transition-opacity ${
+                              statusColors[appointment.status] || 'bg-salon-600'
+                            } hover:opacity-90`}
+                            style={getAppointmentStyle(appointment)}
+                            onClick={() => onViewAppointment(appointment.id)}
+                            draggable
+                            onDragStart={(e) => handleDragStart(appointment, e)}
+                          >
+                            <div className="text-xs font-medium truncate">
+                              {format(appointment.start, 'h:mm a')} 
+                            </div>
+                            <div className="text-xs truncate">
+                              {appointment.title.split(' - ')[0]}
+                            </div>
+                          </div>
+                        ))
+                      }
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </CardContent>

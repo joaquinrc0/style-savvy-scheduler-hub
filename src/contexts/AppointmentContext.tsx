@@ -82,13 +82,21 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
             updatedAppointment.stylistId = data.stylistId;
           }
           
-          if (data.date && data.time) {
-            const [hours, minutes] = data.time.split(":").map(Number);
-            const start = new Date(data.date);
-            start.setHours(hours, minutes, 0, 0);
+          if (data.date) {
+            let newStart;
             
-            updatedAppointment.start = start;
-            updatedAppointment.end = addMinutes(start, appointment.service.duration);
+            if (data.time) {
+              // Handle time as string (HH:MM)
+              const [hours, minutes] = data.time.split(":").map(Number);
+              newStart = new Date(data.date);
+              newStart.setHours(hours, minutes, 0, 0);
+            } else {
+              // Handle when date is already a Date object with time
+              newStart = new Date(data.date);
+            }
+            
+            updatedAppointment.start = newStart;
+            updatedAppointment.end = addMinutes(newStart, appointment.service.duration);
           }
           
           if (data.notes !== undefined) {
