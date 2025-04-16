@@ -18,6 +18,10 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				playfair: ['Playfair Display', 'serif'],
+				poppins: ['Poppins', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -51,6 +55,18 @@ export default {
 				card: {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
+				},
+				salon: {
+					50: '#f3f1fb',
+					100: '#e5e1f7',
+					200: '#d6bcfa',
+					300: '#c5a3f7',
+					400: '#b087f5',
+					500: '#9b87f5',
+					600: '#8b5cf6',
+					700: '#7c4ef6',
+					800: '#6d40e3',
+					900: '#5e31d0',
 				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
