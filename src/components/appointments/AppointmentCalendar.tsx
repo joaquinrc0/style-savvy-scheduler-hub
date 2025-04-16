@@ -1,15 +1,15 @@
-
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useAppointments } from "@/contexts/AppointmentContext";
-import { format, startOfWeek, endOfWeek, startOfDay, endOfDay, addDays, isSameDay, addHours, isWithinInterval, parseISO, setHours, setMinutes, startOfMonth, endOfMonth, getDaysInMonth, getDay, getDate } from "date-fns";
+import { format, startOfWeek, endOfWeek, startOfDay, endOfDay, addDays, isSameDay, addHours, addMinutes, isWithinInterval, parseISO, setHours, setMinutes, startOfMonth, endOfMonth, getDaysInMonth, getDay, getDate } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChevronLeft, ChevronRight, Plus, Clock, MoveHorizontal, Calendar as CalendarIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Clock, MoveHorizontal, Calendar as CalendarIcon, Maximize, Minimize } from "lucide-react";
 import { AppointmentStatus, Appointment } from "@/types/appointment";
 import { useToast } from "@/hooks/use-toast";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AppointmentCalendarProps {
   onAddAppointment: () => void;
@@ -33,7 +33,9 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [view, setView] = useState<'day' | 'week' | 'month'>('week');
   const [draggedAppointment, setDraggedAppointment] = useState<Appointment | null>(null);
+  const [resizeMode, setResizeMode] = useState<'start' | 'end' | null>(null);
   const weekGridRef = useRef<HTMLDivElement>(null);
+  const dayGridRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const handleAddAppointment = () => {
@@ -83,8 +85,18 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
     return slots;
   }, []);
 
-  const handleDragStart = (appointment: Appointment, event: React.DragEvent) => {
+  const handleDragStart = (appointment: Appointment, event: React.DragEvent, mode: 'move' | 'resize-start' | 'resize-end' = 'move') => {
+    event.stopPropagation();
     setDraggedAppointment(appointment);
+    
+    if (mode === 'resize-start') {
+      setResizeMode('start');
+    } else if (mode === 'resize-end') {
+      setResizeMode('end');
+    } else {
+      setResizeMode(null);
+    }
+    
     event.dataTransfer.setData('text/plain', appointment.id);
     
     // Create a ghost image for dragging
@@ -100,11 +112,11 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
     }, 0);
   };
 
-  const handleDragOver = (event: React.DragEvent, day: Date, hour: number) => {
+  const handleDragOver = (event: React.DragEvent, day: Date, hour: number, minute: number = 0) => {
     event.preventDefault();
   };
 
-  const handleDrop = (event: React.DragEvent, day: Date, hour: number) => {
+  const handleDrop = (event: React.DragEvent, day: Date, hour: number, minute: number = 0) => {
     event.preventDefault();
     if (!draggedAppointment) return;
     
@@ -112,41 +124,130 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
     
     const newStart = new Date(day);
     newStart.setHours(hour);
-    newStart.setMinutes(0);
+    newStart.setMinutes(minute);
     newStart.setSeconds(0);
     
-    const durationMs = draggedAppointment.end.getTime() - draggedAppointment.start.getTime();
-    const newEnd = new Date(newStart.getTime() + durationMs);
+    // Calculate end time based on whether we're resizing or moving
+    let newEnd: Date;
     
-    // Calculate the end time of the business day
-    const endOfBusinessDay = new Date(day);
-    endOfBusinessDay.setHours(END_HOUR);
-    endOfBusinessDay.setMinutes(0);
-    endOfBusinessDay.setSeconds(0);
-    
-    // Check if appointment would end after business hours
-    if (newEnd > endOfBusinessDay) {
-      toast({
-        title: "Cannot move appointment",
-        description: "The appointment would end after business hours.",
-        variant: "destructive"
+    if (resizeMode === 'start') {
+      // Resizing the start time - end time stays fixed
+      newEnd = new Date(draggedAppointment.end);
+      
+      // Ensure start isn't after end
+      if (newStart >= newEnd) {
+        toast({
+          title: "Invalid resize",
+          description: "Start time cannot be after end time",
+          variant: "destructive"
+        });
+        setResizeMode(null);
+        setDraggedAppointment(null);
+        return;
+      }
+      
+      // Update the appointment with new start time
+      updateAppointment(appointmentId, {
+        date: newStart,
+        time: `${newStart.getHours()}:${newStart.getMinutes().toString().padStart(2, '0')}`,
       });
-      return;
+      
+      toast({
+        title: "Appointment resized",
+        description: `Start time changed to ${format(newStart, 'h:mm a')}`,
+      });
+      
+    } else if (resizeMode === 'end') {
+      // Resizing the end time - start time stays fixed
+      const start = new Date(draggedAppointment.start);
+      newEnd = new Date(day);
+      newEnd.setHours(hour);
+      newEnd.setMinutes(minute);
+      
+      // Ensure end isn't before start
+      if (newEnd <= start) {
+        toast({
+          title: "Invalid resize",
+          description: "End time cannot be before start time",
+          variant: "destructive"
+        });
+        setResizeMode(null);
+        setDraggedAppointment(null);
+        return;
+      }
+      
+      // Calculate the new duration in minutes
+      const durationMs = newEnd.getTime() - start.getTime();
+      const durationMinutes = Math.floor(durationMs / (1000 * 60));
+      
+      // Calculate end of business day
+      const endOfBusinessDay = new Date(day);
+      endOfBusinessDay.setHours(END_HOUR);
+      endOfBusinessDay.setMinutes(0);
+      
+      // Check if appointment would end after business hours
+      if (newEnd > endOfBusinessDay) {
+        toast({
+          title: "Cannot resize appointment",
+          description: "The appointment would end after business hours.",
+          variant: "destructive"
+        });
+        setResizeMode(null);
+        setDraggedAppointment(null);
+        return;
+      }
+      
+      // Update the service duration in the appointment context
+      updateAppointment(appointmentId, {
+        // Keeping the existing date and time, just modifying the end time
+        date: start,
+        time: `${start.getHours()}:${start.getMinutes().toString().padStart(2, '0')}`,
+      });
+      
+      toast({
+        title: "Appointment duration changed",
+        description: `Duration set to ${durationMinutes} minutes`,
+      });
+      
+    } else {
+      // Moving the whole appointment
+      const durationMs = draggedAppointment.end.getTime() - draggedAppointment.start.getTime();
+      newEnd = new Date(newStart.getTime() + durationMs);
+      
+      // Calculate the end time of the business day
+      const endOfBusinessDay = new Date(day);
+      endOfBusinessDay.setHours(END_HOUR);
+      endOfBusinessDay.setMinutes(0);
+      
+      // Check if appointment would end after business hours
+      if (newEnd > endOfBusinessDay) {
+        toast({
+          title: "Cannot move appointment",
+          description: "The appointment would end after business hours.",
+          variant: "destructive"
+        });
+        setResizeMode(null);
+        setDraggedAppointment(null);
+        return;
+      }
+      
+      // Update the appointment with new time but preserve other data
+      updateAppointment(appointmentId, {
+        date: newStart,
+        time: `${newStart.getHours()}:${newStart.getMinutes().toString().padStart(2, '0')}`,
+      });
+      
+      toast({
+        title: "Appointment moved",
+        description: `Moved to ${format(newStart, 'EEEE, MMMM d')} at ${format(newStart, 'h:mm a')}`,
+      });
     }
     
-    // Update the appointment with new time but preserve other data
-    updateAppointment(appointmentId, {
-      date: newStart,
-      time: `${newStart.getHours()}:${newStart.getMinutes().toString().padStart(2, '0')}`,
-    });
-    
-    toast({
-      title: "Appointment moved",
-      description: `Moved to ${format(newStart, 'EEEE, MMMM d')} at ${format(newStart, 'h:mm a')}`,
-    });
+    setResizeMode(null);
+    setDraggedAppointment(null);
   };
 
-  // Position appointment correctly in week grid
+  // Position appointment correctly in week/day grid
   const getAppointmentStyle = (appointment: Appointment) => {
     const startHour = appointment.start.getHours();
     const startMinutes = appointment.start.getMinutes();
@@ -163,21 +264,6 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
       left: '4px',
       position: 'absolute' as const,
     };
-  };
-
-  // Check if an appointment is on a specific day and hour
-  const isAppointmentAtTimeSlot = (appointment: Appointment, day: Date, hour: number) => {
-    const dayStart = startOfDay(day);
-    const timeSlotStart = addHours(dayStart, hour);
-    const timeSlotEnd = addHours(dayStart, hour + 1);
-    
-    return isWithinInterval(appointment.start, {
-      start: dayStart,
-      end: endOfDay(day)
-    }) && isWithinInterval(appointment.start, {
-      start: timeSlotStart,
-      end: timeSlotEnd
-    });
   };
 
   // Generate month grid days
@@ -230,7 +316,7 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h2 className="text-2xl font-bold font-playfair">
+          <h2 className="text-2xl md:text-3xl font-bold font-playfair tracking-tight">
             {view === 'day' 
               ? format(selectedDate, 'MMMM d, yyyy')
               : view === 'week'
@@ -244,6 +330,7 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
             variant="outline"
             size="sm"
             onClick={goToPrevious}
+            className="font-medium"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -251,6 +338,7 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
             variant="outline"
             size="sm"
             onClick={goToToday}
+            className="font-medium"
           >
             Today
           </Button>
@@ -258,19 +346,20 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
             variant="outline"
             size="sm"
             onClick={goToNext}
+            className="font-medium"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
           <Tabs defaultValue={view} onValueChange={(value) => setView(value as 'day' | 'week' | 'month')}>
             <TabsList>
-              <TabsTrigger value="day">Day</TabsTrigger>
-              <TabsTrigger value="week">Week</TabsTrigger>
-              <TabsTrigger value="month">Month</TabsTrigger>
+              <TabsTrigger value="day" className="font-medium">Day</TabsTrigger>
+              <TabsTrigger value="week" className="font-medium">Week</TabsTrigger>
+              <TabsTrigger value="month" className="font-medium">Month</TabsTrigger>
             </TabsList>
           </Tabs>
           <Button
             size="sm"
-            className="bg-salon-600 hover:bg-salon-700"
+            className="bg-salon-600 hover:bg-salon-700 font-medium"
             onClick={handleAddAppointment}
           >
             <Plus className="h-4 w-4 mr-1" /> Add Appointment
@@ -280,50 +369,115 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center">
+          <CardTitle className="flex items-center text-xl tracking-tight">
             {view === 'day' ? 'Day Schedule' : view === 'week' ? 'Week Schedule' : 'Month View'}
-            {(view === 'week' || view === 'day') && (
-              <span className="ml-2 text-xs flex items-center text-muted-foreground">
-                <MoveHorizontal className="h-3 w-3 mr-1" /> Drag to reschedule
-              </span>
-            )}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="ml-2 text-xs flex items-center text-muted-foreground">
+                    <MoveHorizontal className="h-3 w-3 mr-1" /> Drag to reschedule
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Drag appointment to reschedule</p>
+                  <p>Drag top/bottom edges to resize</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="font-medium">
             {filteredAppointments.length} appointments {view === 'day' ? 'today' : view === 'week' ? 'this week' : 'this month'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {view === 'day' && (
-            <div className="space-y-3">
-              {filteredAppointments.length > 0 ? (
-                filteredAppointments
-                  .sort((a, b) => a.start.getTime() - b.start.getTime())
-                  .map((appointment) => (
-                    <div
+            <div className="relative">
+              {/* Day view header */}
+              <div className="grid grid-cols-2 border-b mb-2">
+                <div className="text-center p-2 text-xs text-muted-foreground font-medium">
+                  <Clock className="h-3 w-3 mx-auto" />
+                </div>
+                <div className="text-center p-2 bg-salon-100 rounded-t-md">
+                  <div className="text-xs uppercase font-medium tracking-wide">{format(selectedDate, 'EEEE')}</div>
+                  <div className="text-base text-salon-700 font-semibold">{format(selectedDate, 'd')}</div>
+                </div>
+              </div>
+              
+              {/* Time grid */}
+              <div 
+                className="grid grid-cols-2 relative overflow-y-auto max-h-[600px] scrollbar-thin scrollbar-thumb-salon-200"
+                ref={dayGridRef}
+                style={{ height: `${(END_HOUR - START_HOUR + 1) * HOUR_HEIGHT}px` }}
+              >
+                {/* Time labels */}
+                <div className="col-span-1 border-r">
+                  {timeSlots.map(hour => (
+                    <div 
+                      key={hour} 
+                      className="border-b text-xs text-right pr-2 text-muted-foreground font-medium"
+                      style={{ height: `${HOUR_HEIGHT}px`, lineHeight: `${HOUR_HEIGHT}px` }}
+                    >
+                      {hour === 12 ? '12 PM' : hour < 12 ? `${hour} AM` : `${hour-12} PM`}
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Day column */}
+                <div className="col-span-1 relative bg-salon-50">
+                  {/* Hour cells */}
+                  {timeSlots.map(hour => (
+                    <div 
+                      key={hour}
+                      className="border-b border-dashed hover:bg-salon-50/80 transition-colors"
+                      style={{ height: `${HOUR_HEIGHT}px` }}
+                      onDragOver={(e) => handleDragOver(e, selectedDate, hour)}
+                      onDrop={(e) => handleDrop(e, selectedDate, hour)}
+                    />
+                  ))}
+                  
+                  {/* Appointments */}
+                  {filteredAppointments.map(appointment => (
+                    <div 
                       key={appointment.id}
-                      className="p-3 border rounded-md hover:bg-accent cursor-pointer transition-colors"
+                      className={`absolute rounded-md px-1 py-1 text-white overflow-hidden cursor-pointer transition-opacity ${
+                        statusColors[appointment.status] || 'bg-salon-600'
+                      } hover:opacity-90`}
+                      style={getAppointmentStyle(appointment)}
                       onClick={() => onViewAppointment(appointment.id)}
                       draggable
                       onDragStart={(e) => handleDragStart(appointment, e)}
                     >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-medium">{appointment.title}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {format(appointment.start, 'h:mm a')} - {format(appointment.end, 'h:mm a')}
-                          </p>
+                      <div className="text-xs font-medium truncate flex justify-between items-center">
+                        <span>{format(appointment.start, 'h:mm a')}</span>
+                        <div className="flex space-x-1">
+                          <div 
+                            className="h-3 w-3 rounded-full bg-white/30 cursor-ns-resize"
+                            draggable
+                            onDragStart={(e) => handleDragStart(appointment, e, 'resize-start')}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Minimize className="h-3 w-3" />
+                          </div>
+                          <div 
+                            className="h-3 w-3 rounded-full bg-white/30 cursor-ns-resize"
+                            draggable
+                            onDragStart={(e) => handleDragStart(appointment, e, 'resize-end')}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Maximize className="h-3 w-3" />
+                          </div>
                         </div>
-                        <Badge className={statusColors[appointment.status]}>
-                          {appointment.status}
-                        </Badge>
+                      </div>
+                      <div className="text-xs truncate font-medium">
+                        {appointment.title.split(' - ')[0]}
+                      </div>
+                      <div className="text-xs truncate opacity-90 font-medium">
+                        {appointment.title.split(' - ')[1]}
                       </div>
                     </div>
-                  ))
-              ) : (
-                <div className="py-8 text-center text-muted-foreground">
-                  No appointments scheduled
+                  ))}
                 </div>
-              )}
+              </div>
             </div>
           )}
 
@@ -331,7 +485,7 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
             <div className="relative">
               {/* Week view header */}
               <div className="grid grid-cols-8 border-b mb-2">
-                <div className="text-center p-2 text-xs text-muted-foreground">
+                <div className="text-center p-2 text-xs text-muted-foreground font-medium">
                   <Clock className="h-3 w-3 mx-auto" />
                 </div>
                 {weekDays.map((day, index) => (
@@ -339,8 +493,8 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
                     key={index} 
                     className={`text-center p-2 ${isSameDay(day, new Date()) ? 'bg-salon-100 rounded-t-md' : ''}`}
                   >
-                    <div className="text-xs uppercase font-medium">{format(day, 'EEE')}</div>
-                    <div className={`text-base ${isSameDay(day, new Date()) ? 'text-salon-700 font-medium' : ''}`}>
+                    <div className="text-xs uppercase font-medium tracking-wide">{format(day, 'EEE')}</div>
+                    <div className={`text-base ${isSameDay(day, new Date()) ? 'text-salon-700 font-semibold' : 'font-medium'}`}>
                       {format(day, 'd')}
                     </div>
                   </div>
@@ -349,7 +503,7 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
               
               {/* Time grid */}
               <div 
-                className="grid grid-cols-8 relative overflow-y-auto max-h-[500px] scrollbar-thin scrollbar-thumb-salon-200"
+                className="grid grid-cols-8 relative overflow-y-auto max-h-[600px] scrollbar-thin scrollbar-thumb-salon-200"
                 ref={weekGridRef}
                 style={{ height: `${(END_HOUR - START_HOUR + 1) * HOUR_HEIGHT}px` }}
               >
@@ -358,7 +512,7 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
                   {timeSlots.map(hour => (
                     <div 
                       key={hour} 
-                      className="border-b text-xs text-right pr-2 text-muted-foreground"
+                      className="border-b text-xs text-right pr-2 text-muted-foreground font-medium"
                       style={{ height: `${HOUR_HEIGHT}px`, lineHeight: `${HOUR_HEIGHT}px` }}
                     >
                       {hour === 12 ? '12 PM' : hour < 12 ? `${hour} AM` : `${hour-12} PM`}
@@ -401,11 +555,32 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
                           draggable
                           onDragStart={(e) => handleDragStart(appointment, e)}
                         >
-                          <div className="text-xs font-medium truncate">
-                            {format(appointment.start, 'h:mm a')} 
+                          <div className="text-xs font-medium truncate flex justify-between items-center">
+                            <span>{format(appointment.start, 'h:mm a')}</span>
+                            <div className="flex space-x-1">
+                              <div 
+                                className="h-3 w-3 rounded-full bg-white/30 cursor-ns-resize"
+                                draggable
+                                onDragStart={(e) => handleDragStart(appointment, e, 'resize-start')}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Minimize className="h-3 w-3" />
+                              </div>
+                              <div 
+                                className="h-3 w-3 rounded-full bg-white/30 cursor-ns-resize"
+                                draggable
+                                onDragStart={(e) => handleDragStart(appointment, e, 'resize-end')}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Maximize className="h-3 w-3" />
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-xs truncate">
+                          <div className="text-xs truncate font-medium">
                             {appointment.title.split(' - ')[0]}
+                          </div>
+                          <div className="text-xs truncate opacity-90 font-medium">
+                            {appointment.title.split(' - ')[1]}
                           </div>
                         </div>
                       ))
@@ -420,7 +595,7 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
             <div className="grid grid-cols-7 gap-1">
               {/* Day headers */}
               {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((dayName, index) => (
-                <div key={index} className="text-center py-2 text-xs font-medium uppercase text-muted-foreground">
+                <div key={index} className="text-center py-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   {dayName}
                 </div>
               ))}
@@ -434,15 +609,17 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
                 return (
                   <div 
                     key={dayIndex}
-                    className={`min-h-[100px] border p-1 relative ${
+                    className={`min-h-[110px] border p-1 relative ${
                       isCurrentMonth ? 'bg-background' : 'bg-muted/20 text-muted-foreground'
                     } ${isToday ? 'border-salon-500 bg-salon-50' : 'border-border'}`}
                     onClick={() => {
                       setSelectedDate(day);
                       setView('day');
                     }}
+                    onDragOver={(e) => handleDragOver(e, day, 9)} // Default to 9 AM
+                    onDrop={(e) => handleDrop(e, day, 9)} // Default to 9 AM
                   >
-                    <div className={`text-right text-sm p-1 ${isToday ? 'font-medium text-salon-700' : ''}`}>
+                    <div className={`text-right text-sm p-1 ${isToday ? 'font-semibold text-salon-700' : 'font-medium'}`}>
                       {format(day, 'd')}
                     </div>
                     
@@ -450,7 +627,9 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
                       {dayAppointments.slice(0, 3).map((appointment, index) => (
                         <div
                           key={index}
-                          className={`text-xs mb-1 p-1 rounded truncate text-white ${statusColors[appointment.status]}`}
+                          className={`text-xs mb-1 p-1 rounded truncate text-white ${statusColors[appointment.status]} font-medium`}
+                          draggable
+                          onDragStart={(e) => handleDragStart(appointment, e)}
                           onClick={(e) => {
                             e.stopPropagation();
                             onViewAppointment(appointment.id);
@@ -460,7 +639,7 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
                         </div>
                       ))}
                       {dayAppointments.length > 3 && (
-                        <div className="text-xs text-muted-foreground text-center">
+                        <div className="text-xs text-muted-foreground text-center font-medium">
                           +{dayAppointments.length - 3} more
                         </div>
                       )}

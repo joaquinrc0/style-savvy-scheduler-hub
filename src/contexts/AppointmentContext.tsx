@@ -2,7 +2,7 @@
 import React, { createContext, useState, useContext, ReactNode } from "react";
 import { Appointment, AppointmentFormData } from "@/types/appointment";
 import { appointments as mockAppointments } from "@/data/mockData";
-import { addMinutes } from "date-fns";
+import { addMinutes, differenceInMinutes } from "date-fns";
 
 type AppointmentContextType = {
   appointments: Appointment[];
@@ -10,6 +10,7 @@ type AppointmentContextType = {
   updateAppointment: (id: string, data: Partial<AppointmentFormData>) => void;
   deleteAppointment: (id: string) => void;
   getAppointmentById: (id: string) => Appointment | undefined;
+  updateAppointmentDuration: (id: string, newEnd: Date) => void;
 };
 
 const AppointmentContext = createContext<AppointmentContextType | undefined>(undefined);
@@ -101,8 +102,11 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
               newStart = new Date(data.date);
             }
             
+            // Calculate duration from current start/end
+            const currentDuration = differenceInMinutes(appointment.end, appointment.start);
+            
             updatedAppointment.start = newStart;
-            updatedAppointment.end = addMinutes(newStart, appointment.service.duration);
+            updatedAppointment.end = addMinutes(newStart, currentDuration);
           }
           
           if (data.notes !== undefined) {
@@ -111,6 +115,28 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
           
           updatedAppointment.updatedAt = new Date();
           
+          return updatedAppointment;
+        }
+        return appointment;
+      })
+    );
+  };
+
+  const updateAppointmentDuration = (id: string, newEnd: Date) => {
+    setAppointments(prev => 
+      prev.map(appointment => {
+        if (appointment.id === id) {
+          const updatedAppointment = { ...appointment };
+          updatedAppointment.end = newEnd;
+          
+          // Update the service duration
+          const newDuration = differenceInMinutes(newEnd, appointment.start);
+          updatedAppointment.service = {
+            ...appointment.service,
+            duration: newDuration
+          };
+          
+          updatedAppointment.updatedAt = new Date();
           return updatedAppointment;
         }
         return appointment;
@@ -132,6 +158,7 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
     updateAppointment,
     deleteAppointment,
     getAppointmentById,
+    updateAppointmentDuration,
   };
 
   return (

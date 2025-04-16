@@ -27,8 +27,8 @@ export default function AppointmentsPage() {
   return (
     <AppointmentProvider>
       <PageLayout>
-        <div className="space-y-6">
-          <h1 className="section-heading text-4xl md:text-5xl font-playfair font-semibold text-salon-800 mb-8">
+        <div className="space-y-4">
+          <h1 className="text-4xl md:text-5xl font-playfair font-semibold text-salon-800 mb-4 tracking-tight">
             Appointment Scheduler
           </h1>
           <AppointmentCalendar 
