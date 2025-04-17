@@ -22,7 +22,7 @@ export default function Index() {
         <div className="relative h-full flex items-center salon-container">
           <div className="max-w-2xl text-white">
             <h1 className="text-4xl md:text-6xl font-bold font-playfair mb-4">
-              Belle Salon & Spa Management
+              Hair Salon
             </h1>
             <p className="text-lg md:text-xl mb-8 text-white/90">
               A comprehensive salon management system with appointment scheduling, client management, and performance analytics
