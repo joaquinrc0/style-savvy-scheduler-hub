@@ -6,10 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChevronLeft, ChevronRight, Plus, Clock, MoveHorizontal, Calendar as CalendarIcon, Maximize, Minimize } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Clock, MoveHorizontal, Calendar as CalendarIcon, Maximize, Minimize, Download } from "lucide-react";
 import { AppointmentStatus, Appointment } from "@/types/appointment";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { exportCalendarData } from "@/utils/exportData";
 
 interface AppointmentCalendarProps {
   onAddAppointment: () => void;
@@ -40,6 +41,22 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
 
   const handleAddAppointment = () => {
     onAddAppointment();
+  };
+
+  const handleExport = () => {
+    try {
+      exportCalendarData(appointments);
+      toast({
+        title: "Export successful",
+        description: "Calendar data has been downloaded",
+      });
+    } catch (error) {
+      toast({
+        title: "Export failed",
+        description: "Could not export calendar data",
+        variant: "destructive"
+      });
+    }
   };
 
   const filteredAppointments = useMemo(() => {
@@ -363,6 +380,13 @@ export function AppointmentCalendar({ onAddAppointment, onViewAppointment }: App
             onClick={handleAddAppointment}
           >
             <Plus className="h-4 w-4 mr-1" /> Add Appointment
+          </Button>
+          <Button
+            size="sm"
+            className="bg-red-600 hover:bg-red-700 font-medium"
+            onClick={handleExport}
+          >
+            <Download className="h-4 w-4 mr-1" /> Export Calendar
           </Button>
         </div>
       </div>
