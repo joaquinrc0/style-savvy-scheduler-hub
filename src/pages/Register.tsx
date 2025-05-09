@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import * as zod from "zod";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,59 +20,54 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/contexts/AuthContext";
 import { AuthLayout } from "@/components/auth/AuthLayout";
-import { useToast } from "@/components/ui/use-toast";
 
-const loginSchema = zod.object({
-  email: zod.string().email("Please enter a valid email address"),
-  password: zod.string().min(6, "Password must be at least 6 characters"),
+const registerSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
-export default function LoginPage() {
-  const { login } = useAuth();
+export default function RegisterPage() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<zod.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<z.infer<typeof registerSchema>>({
+    resolver: zodResolver(registerSchema),
     defaultValues: {
       email: "",
       password: "",
+      confirmPassword: "",
     },
   });
 
-  const onSubmit = async (data: zod.infer<typeof loginSchema>) => {
+  const onSubmit = async (data: z.infer<typeof registerSchema>) => {
     setIsLoading(true);
     try {
-      await login(data.email, data.password);
-      navigate("/dashboard"); // Explicitly navigate after successful login
-      toast({
-        title: "Success",
-        description: "Welcome back!",
-      });
+      // TODO: Implement actual registration logic
+      console.log("Register data:", data);
+      localStorage.setItem("isAuthenticated", "true");
+      navigate("/dashboard");
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Invalid email or password",
-        variant: "destructive",
-      });
+      console.error("Registration failed:", error);
     } finally {
-      setIsLoading(false); // Always reset loading state
+      setIsLoading(false);
     }
   };
 
   return (
     <AuthLayout
-      title="Welcome Back"
-      subtitle="Sign in to your salon management account"
+      title="Create Account"
+      subtitle="Sign up to start managing your salon"
     >
       <Card className="backdrop-blur-sm bg-white/95">
         <CardHeader>
-          <CardTitle>Sign In</CardTitle>
+          <CardTitle>Sign Up</CardTitle>
           <CardDescription>
-            Enter your email and password to access your account
+            Enter your details to create your account
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -110,33 +105,38 @@ export default function LoginPage() {
                 )}
               />
 
-              <div className="flex items-center justify-between">
-                <Link
-                  to="/forgot-password"
-                  className="text-sm text-salon-600 hover:text-salon-700"
-                >
-                  Forgot your password?
-                </Link>
-              </div>
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <Button
                 type="submit"
                 className="w-full bg-salon-600 hover:bg-salon-700"
                 disabled={isLoading}
               >
-                {isLoading ? "Signing in..." : "Sign In"}
+                {isLoading ? "Creating account..." : "Create Account"}
               </Button>
             </form>
           </Form>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
-              Don't have an account?{" "}
+              Already have an account?{" "}
               <Link
-                to="/register"
+                to="/login"
                 className="text-salon-600 hover:text-salon-700 font-medium"
               >
-                Create one
+                Sign in
               </Link>
             </p>
           </div>
