@@ -15,6 +15,9 @@ import Services from "./pages/Services";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import Terms from "./pages/legal/Terms"; // Import Terms
+import Privacy from "./pages/legal/Privacy"; // Import Privacy
+import Contact from "./pages/Contact"; // Import Contact
 
 const queryClient = new QueryClient();
 
@@ -86,6 +89,30 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/terms"
+            element={
+              <ProtectedRoute>
+                <Terms />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/privacy"
+            element={
+              <ProtectedRoute>
+                <Privacy />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/contact"
+            element={
+              <ProtectedRoute>
+                <Contact />
               </ProtectedRoute>
             }
           />

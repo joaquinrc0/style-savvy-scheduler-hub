@@ -1,19 +1,47 @@
-
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Calendar, Users, Scissors, LineChart, ChevronRight } from "lucide-react";
+import { Calendar, Users, Scissors, LineChart, ChevronRight, Settings, LogOut } from "lucide-react";
 import { services } from "@/data/mockData";
 
 export default function Index() {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("isAuthenticated");
+    navigate("/login");
+  };
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Auth buttons */}
+      <div className="absolute top-4 right-4 flex items-center gap-4 z-10">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => navigate('/settings')}
+          className="bg-white/90 text-salon-000 hover:text-salon-700 hover:bg-white"
+        >
+          <Settings className="h-4 w-4 mr-2" />
+          Settings
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={handleLogout}
+          className="bg-white/90 text-salon-000 hover:text-salon-700 hover:bg-white"
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Logout
+        </Button>
+      </div>
+
       {/* Hero Section */}
-      <section className="relative h-[600px] overflow-hidden">
+      <section className="relative h-[200px] overflow-hidden">
         <div 
           className="absolute inset-0 bg-gradient-to-r from-salon-900/80 to-salon-500/50"
           style={{
-            backgroundImage: "url('https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80')",
+            backgroundImage: "url('https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=2074&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')",
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundBlendMode: "overlay",
@@ -22,19 +50,11 @@ export default function Index() {
         <div className="relative h-full flex items-center salon-container">
           <div className="max-w-2xl text-white">
             <h1 className="text-4xl md:text-6xl font-bold font-playfair mb-4">
-              Hair Salon
+              Barber Shop
             </h1>
             <p className="text-lg md:text-xl mb-8 text-white/90">
               A comprehensive salon management system with appointment scheduling, client management, and performance analytics
             </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button asChild size="lg" className="bg-salon-600 hover:bg-salon-700">
-                <Link to="/appointments">Schedule Appointment</Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="bg-white/10 text-white border-white/30 hover:bg-white/20">
-                <Link to="/dashboard">View Dashboard</Link>
-              </Button>
-            </div>
           </div>
         </div>
       </section>
@@ -78,97 +98,24 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Services Section */}
-      <section className="py-20 bg-salon-50">
-        <div className="salon-container">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-semibold font-playfair mb-4">
-              Our Services
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Explore our range of professional salon services available for booking
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services.map(service => (
-              <Card key={service.id} className="service-card">
-                <CardContent className="p-6">
-                  <div className="mb-4">
-                    <div className="w-12 h-12 rounded-full bg-salon-100 flex items-center justify-center mb-4">
-                      <Scissors className="h-6 w-6 text-salon-600" />
-                    </div>
-                    <h3 className="text-xl font-semibold mb-2">{service.name}</h3>
-                    <p className="text-muted-foreground mb-4">{service.description}</p>
-                    <div className="flex justify-between items-center text-sm text-muted-foreground">
-                      <span>{service.duration} minutes</span>
-                      <span className="font-medium text-foreground">${service.price.toFixed(2)}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <div className="text-center mt-12">
-            <Button asChild className="bg-salon-600 hover:bg-salon-700">
-              <Link to="/services">View All Services</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 bg-salon-600 text-white">
-        <div className="salon-container text-center">
-          <h2 className="text-3xl md:text-4xl font-semibold font-playfair mb-4">
-            Ready to Get Started?
-          </h2>
-          <p className="text-white/80 max-w-2xl mx-auto mb-8">
-            Start managing your salon more efficiently today with our comprehensive salon management system
-          </p>
-          <Button asChild size="lg" variant="outline" className="bg-white text-salon-600 hover:bg-white/90">
-            <Link to="/appointments">Schedule Your First Appointment</Link>
-          </Button>
-        </div>
-      </section>
-
       {/* Footer */}
       <footer className="py-10 bg-foreground text-white">
         <div className="salon-container">
-          <div className="grid md:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-4 gap-20">
             <div>
-              <h3 className="text-lg font-semibold mb-4">Belle Salon</h3>
+              <h3 className="text-lg font-semibold mb-4">Barber Shop</h3>
               <p className="text-white/70">
                 Professional salon management system for modern salons and spas.
               </p>
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
-              <ul className="space-y-2">
-                <li><Link to="/" className="text-white/70 hover:text-white">Home</Link></li>
-                <li><Link to="/appointments" className="text-white/70 hover:text-white">Appointments</Link></li>
-                <li><Link to="/clients" className="text-white/70 hover:text-white">Clients</Link></li>
-                <li><Link to="/services" className="text-white/70 hover:text-white">Services</Link></li>
-              </ul>
+              <h3><Link to="/terms" className="text-lg font-semibold mb-4">Terms & Conditions</Link></h3>
+            </div>
+              <div>
+              <h3><Link to="/privacy" className="text-lg font-semibold mb-4">Privacy Policy</Link></h3>
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-4">Features</h3>
-              <ul className="space-y-2">
-                <li><Link to="/dashboard" className="text-white/70 hover:text-white">Dashboard</Link></li>
-                <li><Link to="/appointments" className="text-white/70 hover:text-white">Calendar</Link></li>
-                <li><Link to="/clients" className="text-white/70 hover:text-white">Client Management</Link></li>
-                <li><Link to="/services" className="text-white/70 hover:text-white">Service Management</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Contact</h3>
-              <address className="not-italic text-white/70">
-                123 Salon Street<br />
-                Beauty City, BC 12345<br />
-                info@bellesalon.com<br />
-                (555) 123-4567
-              </address>
+              <h3><Link to="/contact" className="text-lg font-semibold mb-4">Contact Us</Link></h3>
             </div>
           </div>
           <div className="border-t border-white/10 mt-8 pt-8 text-center text-white/50">
