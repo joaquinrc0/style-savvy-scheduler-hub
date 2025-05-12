@@ -47,7 +47,7 @@ def git_push(request):
         # Si hay cambios, arranca docker-compose
         print("Rebuilding and restarting web service…")
 
-        compose_file = os.path.join(BASE_DIR, "docker-compose.yml")
+        compose_file = os.path.join(os.path.dirname(BASE_DIR), "docker-compose.yml")
         cmd = [
             "docker-compose",
             "-f", compose_file,
