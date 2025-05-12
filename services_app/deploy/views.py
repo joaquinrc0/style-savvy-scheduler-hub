@@ -61,7 +61,7 @@ def git_push(request):
             text=True
         )
         if proc.returncode != 0:
-            # mostramos siempre stderr/texto
+            # mostramos siempre stderr/texto.
             error_msg = (
                 f"Error deploying:\n"
                 f"Command: {' '.join(cmd)}\n"
