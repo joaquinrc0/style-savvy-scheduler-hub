@@ -3,6 +3,17 @@ from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, HttpResponseBadRequest
 
+BASE_DIR = settings.BASE_DIR  # usually the directory with manage.py
+
+def run_git_cmd(cmd):
+    return subprocess.run(
+        cmd,
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        cwd=BASE_DIR,
+    )
+
 @csrf_exempt
 def git_push(request):
     # Solo aceptamos POST
@@ -23,31 +34,9 @@ def git_push(request):
     # Ejecutamos git pull y docker-compose
     try:
 
-        # Configure git if not already configured
-
-        subprocess.run(
-            ["git", "config", "--global", "user.name", "joaquinrc0"],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-
-        # Ensure we're on main branch
-        subprocess.run(
-            ["git", "checkout", "main"],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-
-        # Pull latest changes
-        print("Pulling latest changes from repository...")
-        pull_result = subprocess.run(
-            ["git", "pull", "origin", "main"],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
+        run_git_cmd(["git", "config", "--global", "user.name", "joaquinrc0"])
+        run_git_cmd(["git", "checkout", "main"])
+        pull_result = run_git_cmd(["git", "pull", "origin", "main"])
         print(pull_result.stdout.decode())
 
         # Only rebuild if there were changes
