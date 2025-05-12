@@ -22,9 +22,6 @@ def git_push(request):
 
     # Ejecutamos git pull y docker-compose
     try:
-        # Set working directory to project root
-        project_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        os.chdir(project_dir)
 
         # Configure git if not already configured
 
