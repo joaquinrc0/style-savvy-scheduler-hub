@@ -42,16 +42,15 @@ def git_push(request):
         print(pull_result.stdout.decode())
 
         # Only rebuild if there were changes
-        if "Already up to date" not in pull_result.stdout.decode():
-            print("Rebuilding and restarting web service...")
-            subprocess.run(
-                ["docker", "compose", "up", "-d", "--build", "django"],
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-        else:
-            print("No changes to deploy")
+
+        print("Rebuilding and restarting web service...")
+        subprocess.run(
+            ["docker", "compose", "up", "-d", "--build", "django"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+
 
     except subprocess.CalledProcessError as e:
         error_msg = f"Error deploying:\nCommand: {e.cmd}\nOutput: {e.stderr.decode()}"
