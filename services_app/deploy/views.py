@@ -44,12 +44,16 @@ def git_push(request):
         # Only rebuild if there were changes
 
         print("Rebuilding and restarting web service...")
+
+        compose_file = os.path.join(os.path.dirname(BASE_DIR), "docker-compose.yml")
         subprocess.run(
-            ["docker-compose", "up", "-d", "--build", "django"],
+            [
+            "docker-compose",
+            "-f", compose_file,
+            "up", "-d", "--build", "django"
+            ],
             check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
+        )   
 
 
     except subprocess.CalledProcessError as e:

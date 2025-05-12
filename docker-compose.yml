@@ -12,10 +12,8 @@ services:
       context: .
     volumes:
       - ./services_app:/app
-      - static_volume:/app/static
-      - media_volume:/app/media
       - ./.git:/app/.git
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     env_file: .env
     ports:
       - "8000:8000"
