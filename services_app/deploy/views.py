@@ -45,33 +45,32 @@ def git_push(request):
         print(out)
 
         # Si hay cambios, arranca docker-compose
-        if "Already up to date" not in out:
-            print("Rebuilding and restarting web service…")
+        print("Rebuilding and restarting web service…")
 
-            compose_file = os.path.join(BASE_DIR, "docker-compose.yml")
-            cmd = [
-                "docker-compose",
-                "-f", compose_file,
-                "up", "-d", "--build", "django"
-            ]
-            proc = subprocess.run(
-                cmd,
-                cwd=BASE_DIR,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
+        compose_file = os.path.join(BASE_DIR, "docker-compose.yml")
+        cmd = [
+            "docker-compose",
+            "-f", compose_file,
+            "up", "-d", "--build", "django"
+        ]
+        proc = subprocess.run(
+            cmd,
+            cwd=BASE_DIR,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        if proc.returncode != 0:
+            # mostramos siempre stderr/texto
+            error_msg = (
+                f"Error deploying:\n"
+                f"Command: {' '.join(cmd)}\n"
+                f"Stdout: {proc.stdout}\n"
+                f"Stderr: {proc.stderr}"
             )
-            if proc.returncode != 0:
-                # mostramos siempre stderr/texto
-                error_msg = (
-                    f"Error deploying:\n"
-                    f"Command: {' '.join(cmd)}\n"
-                    f"Stdout: {proc.stdout}\n"
-                    f"Stderr: {proc.stderr}"
-                )
-                print(error_msg)
-                return HttpResponse(error_msg, status=500)
-            print(proc.stdout)
+            print(error_msg)
+            return HttpResponse(error_msg, status=500)
+        print(proc.stdout)
 
         return HttpResponse(status=204)
 
