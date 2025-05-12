@@ -37,10 +37,7 @@ def git_push(request):
         print("Rebuilding and restarting web service...")
         # 2) Reconstruir y reiniciar únicamente el servicio 'django'
         subprocess.run(
-            [
-                "docker", "compose",
-                "-f", "up", "-d", "--build", "django"
-            ],
+            ["docker", "compose", "up", "-d", "--build", "django"],
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
