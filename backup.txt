@@ -1,0 +1,68 @@
+
+services:
+  # --- Postgres solo para n8n ---
+  postgres:
+    image: postgres:15
+    restart: always
+    env_file: .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # --- Django con SQLite incluido en services_app/db.sqlite3 ---
+  django:
+    build:
+      context: .
+    # Montamos tu código (y el sqlite) en /app
+    volumes:
+      - ./services_app:/app
+    env_file: .env
+    ports:
+      - "8000:8000"
+    # NO dependes de postgres ahora para SQLite
+    # depends_on:
+
+  # --- n8n usando Postgres ---
+  n8n:
+    image: n8nio/n8n:latest
+    restart: always
+    env_file: .env
+    ports:
+      - "5678:5678"
+    depends_on:
+      - postgres
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
+      - DB_POSTGRESDB_USER=${POSTGRES_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+
+  # --- ngrok para exponer n8n ---
+  ngrok:
+    image: ngrok/ngrok:alpine
+    command: http n8n:5678 --url https://eminent-coyote-winning.ngrok-free.app
+    env_file: .env
+    ports:
+       - "4040:4040"
+    depends_on:
+       - n8n
+    volumes:
+       - ~/.n8n:/home/node/.n8n
+  ngrok-django:
+    image: ngrok/ngrok:alpine
+    # Apunta al host "django" (el nombre del service) en el puerto 8000
+    command: http django:8000 --host-header="rewrite"
+    ports:
+      - "4041:4040"       # dashboard ngrok aquí
+    env_file: .env
+    depends_on:
+      - django
+  
+
+volumes:
+  pgdata:
