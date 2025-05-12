@@ -10,8 +10,9 @@ services:
   django:
     build:
       context: .
+    working_dir: /app/services_app
     volumes:
-      - ./services_app:/app
+      - .:/app
       - ./.git:/app/.git
       - /var/run/docker.sock:/var/run/docker.sock:ro
     env_file: .env
