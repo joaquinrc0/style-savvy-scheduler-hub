@@ -28,26 +28,26 @@ def git_push(request):
         # TODO: Poner git aqui, subir todo a una nueva rama y hacer merge con la main. Proxima vez que se haga un push, 
         # se actualiza todo aqui
         print("Pulling latest changes from repository...")
-        # # 1) Traer cambios de origin/main
-        # subprocess.run(
-        #     ["git", "-C", repo_dir, "pull", "origin", "main"],
-        #     check=True,
-        #     stdout=subprocess.PIPE,
-        #     stderr=subprocess.PIPE
-        # )
+        # 1) Traer cambios de origin/main
+        subprocess.run(
+            ["git", "-C", repo_dir, "pull", "origin", "main"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
 
         print("Rebuilding and restarting web service...")
-        # # 2) Reconstruir y reiniciar únicamente el servicio 'django'
-        # subprocess.run(
-        #     [
-        #         "docker", "compose",
-        #         "-f", os.path.join(repo_dir, "docker-compose.yml"),
-        #         "up", "-d", "--build", "django"
-        #     ],
-        #     check=True,
-        #     stdout=subprocess.PIPE,
-        #     stderr=subprocess.PIPE
-        # )
+        # 2) Reconstruir y reiniciar únicamente el servicio 'django'
+        subprocess.run(
+            [
+                "docker", "compose",
+                "-f", os.path.join(repo_dir, "docker-compose.yml"),
+                "up", "-d", "--build", "django"
+            ],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
 
     except subprocess.CalledProcessError as e:
         # Loguea e informa error
