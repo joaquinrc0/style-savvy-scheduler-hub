@@ -35,6 +35,8 @@ def git_push(request):
     try:
 
         run_git_cmd(["git", "config", "--global", "user.name", "joaquinrc0"])
+        # Tell Git that /app is “safe” even if the UID/GID don’t match
+        run_git_cmd(["git", "config", "--global", "--add", "safe.directory", BASE_DIR])
         run_git_cmd(["git", "checkout", "main"])
         pull_result = run_git_cmd(["git", "pull", "origin", "main"])
         print(pull_result.stdout.decode())
