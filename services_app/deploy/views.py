@@ -48,13 +48,14 @@ def git_push(request):
         # Si hay cambios, recarga Gunicorn
         print("Reloading Gunicorn…")
 
-        # Obtiene el PID del proceso maestro de Gunicorn
-        pid = subprocess.check_output(
-            ["pgrep", "-f", "gunicorn: master"], text=True
-        ).strip()
-
-        # Envía la señal HUP al proceso maestro
-        os.kill(int(pid), signal.SIGHUP)
+        # Recarga Gunicorn leyendo el PID desde /tmp/gunicorn.pid
+        pidfile = "/tmp/gunicorn.pid"
+        if os.path.exists(pidfile):
+            with open(pidfile, "r") as f:
+                pid = int(f.read().strip())
+            os.kill(pid, signal.SIGHUP)
+        else:
+            raise FileNotFoundError(f"Gunicorn PID file not found at {pidfile}")
 
         return HttpResponse(status=204)
 
