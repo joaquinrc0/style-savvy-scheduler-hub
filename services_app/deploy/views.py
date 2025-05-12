@@ -38,7 +38,7 @@ def git_push(request):
         run_git_cmd(["git", "config", "--global", "user.name", "joaquinrc0"])
         run_git_cmd(["git", "config", "--global", "--add", "safe.directory", "*"])
 
-        # Pull de main
+        # Pull de main.
         run_git_cmd(["git", "checkout", "main"])
         pull = run_git_cmd(["git", "pull", "origin", "main"])
         out = pull.stdout
