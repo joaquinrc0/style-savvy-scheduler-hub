@@ -22,30 +22,56 @@ def git_push(request):
 
     # Ejecutamos git pull y docker-compose
     try:
-        
-        # TODO: Poner git aqui, subir todo a una nueva rama y hacer merge con la main. Proxima vez que se haga un push, 
-        # se actualiza todo aqui
-        print("Pulling latest changes from repository...")
-        # 1) Traer cambios de origin/main
+        # Set working directory to project root
+        project_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        os.chdir(project_dir)
+
+        # Configure git if not already configured
+
         subprocess.run(
+            ["git", "config", "--global", "user.name", "joaquinrc0"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+
+        # Ensure we're on main branch
+        subprocess.run(
+            ["git", "checkout", "main"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+
+        # Pull latest changes
+        print("Pulling latest changes from repository...")
+        pull_result = subprocess.run(
             ["git", "pull", "origin", "main"],
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
+        print(pull_result.stdout.decode())
 
-        print("Rebuilding and restarting web service...")
-        # 2) Reconstruir y reiniciar únicamente el servicio 'django'
-        subprocess.run(
-            ["docker", "compose", "up", "-d", "--build", "django"],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
+        # Only rebuild if there were changes
+        if "Already up to date" not in pull_result.stdout.decode():
+            print("Rebuilding and restarting web service...")
+            subprocess.run(
+                ["docker", "compose", "up", "-d", "--build", "django"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+        else:
+            print("No changes to deploy")
 
     except subprocess.CalledProcessError as e:
-        # Loguea e informa error
-        # Aquí podrías escribir e.stderr a un fichero
-        return HttpResponse(f"Error deploying:\n{e.stderr.decode()}", status=500)
+        error_msg = f"Error deploying:\nCommand: {e.cmd}\nOutput: {e.stderr.decode()}"
+        print(error_msg)
+        return HttpResponse(error_msg, status=500)
+    except Exception as e:
+        error_msg = f"Unexpected error: {str(e)}"
+        print(error_msg)
+        return HttpResponse(error_msg, status=500)
 
     return HttpResponse("Deployed", status=204)
