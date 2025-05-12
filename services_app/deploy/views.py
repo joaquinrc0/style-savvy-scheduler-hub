@@ -36,7 +36,7 @@ def git_push(request):
     try:
         # Configura git safe dir (solo la primera vez.)
         run_git_cmd(["git", "config", "--global", "user.name", "joaquinrc0"])
-        run_git_cmd(["git", "config", "--global", "--add", "safe.directory", BASE_DIR])
+        run_git_cmd(["git", "config", "--global", "--add", "safe.directory", "*"])
 
         # Pull de main
         run_git_cmd(["git", "checkout", "main"])
