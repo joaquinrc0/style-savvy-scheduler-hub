@@ -45,7 +45,7 @@ def git_push(request):
 
         print("Rebuilding and restarting web service...")
         subprocess.run(
-            ["docker", "compose", "up", "-d", "--build", "django"],
+            ["docker-compose", "up", "-d", "--build", "django"],
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
