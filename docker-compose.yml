@@ -12,6 +12,9 @@ services:
       context: .
     volumes:
       - ./services_app:/app
+      - static_volume:/app/static
+      - media_volume:/app/media
+      - ./.git:/app/.git
     env_file: .env
     ports:
       - "8000:8000"
@@ -70,3 +73,5 @@ services:
 
 volumes:
   pgdata:
+  static_volume:
+  media_volume:
