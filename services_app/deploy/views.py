@@ -22,15 +22,13 @@ def git_push(request):
 
     # Ejecutamos git pull y docker-compose
     try:
-        # TODO: Cambiar por el path del repo
-        repo_dir = settings.BASE_DIR
         
         # TODO: Poner git aqui, subir todo a una nueva rama y hacer merge con la main. Proxima vez que se haga un push, 
         # se actualiza todo aqui
         print("Pulling latest changes from repository...")
         # 1) Traer cambios de origin/main
         subprocess.run(
-            ["git", "-C", repo_dir, "pull", "origin", "main"],
+            ["git", "pull", "origin", "main"],
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
@@ -41,8 +39,7 @@ def git_push(request):
         subprocess.run(
             [
                 "docker", "compose",
-                "-f", os.path.join(repo_dir, "docker-compose.yml"),
-                "up", "-d", "--build", "django"
+                "-f", "up", "-d", "--build", "django"
             ],
             check=True,
             stdout=subprocess.PIPE,
