@@ -2,6 +2,7 @@ import hmac
 import hashlib
 import subprocess
 import os
+import signal
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, HttpResponseBadRequest
@@ -44,38 +45,20 @@ def git_push(request):
         out = pull.stdout
         print(out)
 
-        # Si hay cambios, arranca docker-compose
-        print("Rebuilding and restarting web service…")
+        # Si hay cambios, recarga Gunicorn
+        print("Reloading Gunicorn…")
 
-        compose_file = os.path.join(os.path.dirname(BASE_DIR), "docker-compose.yml")
-        cmd = [
-            "docker-compose",
-            "-f", compose_file,
-            "up", "-d", "--build", "django"
-        ]
-        proc = subprocess.run(
-            cmd,
-            cwd=BASE_DIR,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        if proc.returncode != 0:
-            # mostramos siempre stderr/texto.
-            error_msg = (
-                f"Error deploying:\n"
-                f"Command: {' '.join(cmd)}\n"
-                f"Stdout: {proc.stdout}\n"
-                f"Stderr: {proc.stderr}"
-            )
-            print(error_msg)
-            return HttpResponse(error_msg, status=500)
-        print(proc.stdout)
+        # Obtiene el PID del proceso maestro de Gunicorn
+        pid = subprocess.check_output(
+            ["pgrep", "-f", "gunicorn: master"], text=True
+        ).strip()
+
+        # Envía la señal HUP al proceso maestro
+        os.kill(int(pid), signal.SIGHUP)
 
         return HttpResponse(status=204)
 
     except subprocess.CalledProcessError as e:
-        # e.stderr/text ya incluidos gracias a text=True
         error_msg = (
             f"Error deploying:\n"
             f"Command: {' '.join(e.cmd)}\n"
