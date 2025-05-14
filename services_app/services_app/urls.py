@@ -8,6 +8,8 @@ from django.conf import settings
 # Quitamos posibles barras extra:
 PREFIX = settings.URL_PREFIX.strip("/")
 
+from . import jwt_urls
+
 urlpatterns = [
     # Montamos TODO bajo /<PREFIX>/...
     path(f"{PREFIX}/", include([
@@ -16,5 +18,6 @@ urlpatterns = [
         path("admin/", admin.site.urls),
         path("", include("accounts.urls")),  # asume que en accounts.urls están login/, logout/, etc.
         path("", include("deploy.urls")),    # despliegue, hooks, etc.
+        path("api/token/", include(jwt_urls)),  # JWT endpoints
     ])),
 ]

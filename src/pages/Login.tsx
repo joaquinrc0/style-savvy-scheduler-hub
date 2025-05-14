@@ -44,7 +44,7 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await login(data.email, data.password);
-      // Router will automatically redirect to /appointments
+      navigate("/"); // Redirect to Index after login
     } catch (error) {
       console.error("Login failed:", error);
       setIsLoading(false);
