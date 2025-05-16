@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { 
@@ -9,7 +8,8 @@ import {
   Scissors, 
   Settings, 
   Menu,
-  X 
+  X,
+  LayoutDashboard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,13 @@ const NavItem = ({ to, icon: Icon, label, isCollapsed }: NavItemProps) => {
   );
 };
 
+export const navigationItems = [
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Appointments', href: '/appointments', icon: Calendar },
+  { name: 'Clients', href: '/clients', icon: Users },
+  { name: 'Services', href: '/services', icon: Scissors },
+];
+
 export default function SidebarNav() {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
 
@@ -52,7 +59,6 @@ export default function SidebarNav() {
     { to: "/clients", icon: Users, label: "Clients" },
     { to: "/services", icon: Scissors, label: "Services" },
     { to: "/dashboard", icon: LineChart, label: "Dashboard" },
-    { to: "/settings", icon: Settings, label: "Settings" },
   ];
 
   return (

@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 // Pages
 import Login from "./pages/Login";
+import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword"; // Import ForgotPassword
 import Index from "./pages/Index";
 import Appointments from "./pages/Appointments";
 import Clients from "./pages/Clients";
@@ -13,7 +15,9 @@ import Services from "./pages/Services";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
-import Register from "./pages/Register";
+import Terms from "./pages/legal/Terms"; // Import Terms
+import Privacy from "./pages/legal/Privacy"; // Import Privacy
+import Contact from "./pages/Contact"; // Import Contact
 
 const queryClient = new QueryClient();
 
@@ -39,6 +43,7 @@ const App = () => (
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} /> {/* Add ForgotPassword route */}
           <Route 
             path="/" 
             element={
@@ -84,6 +89,30 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/terms"
+            element={
+              <ProtectedRoute>
+                <Terms />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/privacy"
+            element={
+              <ProtectedRoute>
+                <Privacy />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/contact"
+            element={
+              <ProtectedRoute>
+                <Contact />
               </ProtectedRoute>
             }
           />
