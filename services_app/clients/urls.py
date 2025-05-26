@@ -1,9 +1,8 @@
 from django.urls import path
 from rest_framework import routers
-from .views import AppointmentViewSet, ClientViewSet
+from .views import ClientViewSet
 
 router = routers.DefaultRouter()
-router.register('appointments', AppointmentViewSet)
 router.register('clients', ClientViewSet)
 
 urlpatterns = router.urls

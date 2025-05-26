@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from clients.models import Client
 
 class Appointment(models.Model):
     STATUS_CHOICES = (
@@ -11,6 +12,7 @@ class Appointment(models.Model):
     )
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='appointments')
+    client = models.ForeignKey(Client, on_delete=models.SET_NULL, related_name='appointments', null=True, blank=True)
     title = models.CharField(max_length=200)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
