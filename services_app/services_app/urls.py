@@ -19,5 +19,6 @@ urlpatterns = [
         path("", include("accounts.urls")),  # asume que en accounts.urls están login/, logout/, etc.
         path("", include("deploy.urls")),    # despliegue, hooks, etc.
         path("api/token/", include(jwt_urls)),  # JWT endpoints
+        path("api/", include("appointments.urls")),  # Appointments API endpoints
     ])),
 ]

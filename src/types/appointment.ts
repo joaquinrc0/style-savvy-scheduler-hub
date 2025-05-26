@@ -42,5 +42,7 @@ export type AppointmentFormData = {
   stylistId: string;
   date: Date;
   time: string;
+  endTime?: string; // Optional end time in HH:MM format
+  duration?: number; // Duration in minutes - calculated from service or custom
   notes?: string;
 };

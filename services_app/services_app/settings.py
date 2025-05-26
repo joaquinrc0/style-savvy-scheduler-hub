@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+    'appointments.apps.AppointmentsConfig',
 ]
 
 MIDDLEWARE = [
@@ -142,7 +143,7 @@ URL_PREFIX = "django"
 
 # URL de los estáticos también usando ese prefijo
 STATIC_URL = f"/{URL_PREFIX}/static/"
-LOGIN_URL           = "login"
+LOGIN_URL           = "accounts:login"
 LOGIN_REDIRECT_URL  = f"/{URL_PREFIX}/home/"
 LOGOUT_REDIRECT_URL = LOGIN_URL
 ROOT_PATH = f"{URL_PREFIX}/"
@@ -155,13 +156,42 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
     ),
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
 }
 
-# Allow all origins for CORS (for development)
-CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8080",
-    "http://localhost:3000",
-]
+# CORS settings for development
+CORS_ALLOW_ALL_ORIGINS = True  # Allow all origins during development
+
+# If CORS_ALLOW_ALL_ORIGINS has issues, uncomment and use these specific origins
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:8080",  # Vite dev server
+#     "http://localhost:3000",  # Another common dev port
+#     "http://127.0.0.1:8080",
+#     "http://127.0.0.1:3000",
+# ]
+
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
