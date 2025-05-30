@@ -1,6 +1,8 @@
 import { Appointment } from "@/types/appointment";
 import { format, startOfWeek, endOfWeek, startOfDay, endOfDay, addDays, startOfMonth, endOfMonth, isSameDay } from "date-fns";
-import { START_HOUR, END_HOUR, HOUR_HEIGHT } from "./constants";
+
+import { HOUR_HEIGHT } from "./constants";
+import { WORKING_HOURS_START, WORKING_HOURS_END, isWithinWorkingHours } from "../workingHours";
 
 // Calculate position and height for appointment display
 export const getAppointmentStyle = (appointment: Appointment) => {
@@ -9,7 +11,7 @@ export const getAppointmentStyle = (appointment: Appointment) => {
   const endHour = appointment.end.getHours();
   const endMinute = appointment.end.getMinutes();
   
-  const startPosition = (startHour - START_HOUR) * HOUR_HEIGHT + (startMinute / 60) * HOUR_HEIGHT;
+  const startPosition = (startHour - WORKING_HOURS_START.hour) * HOUR_HEIGHT + (startMinute / 60) * HOUR_HEIGHT;
   const duration = (endHour - startHour) * HOUR_HEIGHT + ((endMinute - startMinute) / 60) * HOUR_HEIGHT;
   
   return {
@@ -75,12 +77,16 @@ export const filterAppointments = (appointments: Appointment[], selectedDate: Da
   }
 };
 
-// Generate time slots with 15-minute intervals
+/**
+ * Generate time slots with 15-minute intervals, only within working hours
+ */
 export const generateTimeSlots = () => {
   const slots = [];
-  for (let hour = START_HOUR; hour <= END_HOUR; hour++) {
+  for (let hour = WORKING_HOURS_START.hour; hour <= WORKING_HOURS_END.hour; hour++) {
     for (let minute = 0; minute < 60; minute += 15) {
-      slots.push({ hour, minute });
+      if (isWithinWorkingHours(hour, minute)) {
+        slots.push({ hour, minute });
+      }
     }
   }
   return slots;
@@ -89,7 +95,7 @@ export const generateTimeSlots = () => {
 // Generate hour slots for labels
 export const generateHourSlots = () => {
   const slots = [];
-  for (let hour = START_HOUR; hour <= END_HOUR; hour++) {
+  for (let hour = WORKING_HOURS_START.hour; hour <= WORKING_HOURS_END.hour; hour++) {
     slots.push(hour);
   }
   return slots;

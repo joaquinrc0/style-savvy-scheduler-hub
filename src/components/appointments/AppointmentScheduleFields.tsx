@@ -9,17 +9,13 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
 import { AppointmentFormType } from "./AppointmentFormConfig.tsx";
 
-// Time slots from 8:00 AM to 5:30 PM with 15-minute intervals
-export const timeSlots = Array.from({ length: 39 }, (_, i) => {
-  const hour = Math.floor((i * 15 + 480) / 60) % 12 || 12; // 480 minutes = 8:00 AM
-  const minute = (i * 15) % 60;
-  const ampm = Math.floor((i * 15 + 480) / 60) < 12 ? "AM" : "PM";
-  const hourValue = Math.floor((i * 15 + 480) / 60);
-  return {
-    value: `${String(hourValue % 24).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
-    label: `${hour}:${String(minute).padStart(2, "0")} ${ampm}`,
-  };
-});
+import { generateTimeSlots, formatTimeSlot } from "./calendar/utils";
+
+// Use centralized time slots for working hours
+const timeSlots = generateTimeSlots().map(slot => ({
+  value: `${String(slot.hour).padStart(2, "0")}:${String(slot.minute).padStart(2, "0")}`,
+  label: formatTimeSlot(slot),
+}));
 
 interface AppointmentScheduleFieldsProps {
   form: UseFormReturn<AppointmentFormType>;

@@ -1,5 +1,7 @@
 import { format } from 'date-fns';
 import { Appointment } from '@/types/appointment';
+import { WORKING_HOURS_START, WORKING_HOURS_END } from "./workingHours";
+import { formatTimeSlot } from "./calendar/utils";
 
 /**
  * Validates if an appointment time is valid and doesn't overlap with existing appointments
@@ -36,19 +38,20 @@ export const validateAppointmentTime = (
       };
     }
     
-    // Check if the appointment falls within business hours (9 AM - 6 PM)
+    
+// Check if the appointment falls within business hours
     const businessStartDate = new Date(date);
-    businessStartDate.setHours(9, 0, 0, 0); // 9 AM
+    businessStartDate.setHours(WORKING_HOURS_START.hour, WORKING_HOURS_START.minute, 0, 0);
     
     const businessEndDate = new Date(date);
     businessEndDate.setHours(18, 0, 0, 0); // 6 PM
     
     if (startDate < businessStartDate) {
-      return { isValid: false, message: "Appointment cannot start before business hours (9 AM)" };
+      return { isValid: false, message: `Appointment cannot start before business hours (${formatTimeSlot(WORKING_HOURS_START)})` };
     }
     
     if (endDate > businessEndDate) {
-      return { isValid: false, message: "Appointment cannot end after business hours (6 PM)" };
+      return { isValid: false, message: `Appointment cannot end after business hours (${formatTimeSlot(WORKING_HOURS_END)})` };
     }
     
     // Check for overlaps with other appointments
