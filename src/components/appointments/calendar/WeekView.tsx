@@ -80,9 +80,11 @@ export const WeekView: React.FC<WeekViewProps> = ({
               <div 
                 key={`${day.getTime()}-${slot.hour}-${slot.minute}`}
                 className={`hover:bg-salon-50/50 transition-colors ${
-                  slot.minute === 0 ? 'border-b' : 'border-b border-dashed border-opacity-30'
+                  slot.minute === 0 ? 'border-t' : 'border-t border-dashed border-opacity-30'
                 }`}
-                style={{ height: `${INTERVAL_HEIGHT}px` }}
+                style={{ 
+                  height: `${INTERVAL_HEIGHT}px`
+                }}
                 onDragOver={(e) => handleDragOver(e, day, slot)}
                 onDrop={(e) => handleDrop(e, day, slot)}
               />

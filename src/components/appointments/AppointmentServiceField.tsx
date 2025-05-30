@@ -22,7 +22,7 @@ export const AppointmentServiceField = ({
       name="serviceId"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Service</FormLabel>
+          <FormLabel className="text-sm">Service</FormLabel>
           <Select
             onValueChange={(value) => {
               console.log('Service selection changed to:', value);
@@ -35,19 +35,19 @@ export const AppointmentServiceField = ({
             disabled={disabled}
           >
             <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a service" />
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Select a service" className="text-sm" />
               </SelectTrigger>
             </FormControl>
-            <SelectContent>
+            <SelectContent className="max-h-[200px]">
               {services.map((service) => (
-                <SelectItem key={service.id} value={service.id}>
+                <SelectItem key={service.id} value={service.id} className="text-sm">
                   {service.name} ({service.duration} min - ${service.price})
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <FormMessage />
+          <FormMessage className="text-xs" />
         </FormItem>
       )}
     />

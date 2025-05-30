@@ -27,6 +27,8 @@ interface AppointmentScheduleFieldsProps {
   shouldUpdateEndTime: boolean;
   onStartTimeChange: (time: string) => void;
   onEndTimeChange: (time: string) => void;
+  appointments: any[];
+  appointmentId?: string;
 }
 
 export const AppointmentScheduleFields = ({
@@ -35,22 +37,24 @@ export const AppointmentScheduleFields = ({
   shouldUpdateEndTime,
   onStartTimeChange,
   onEndTimeChange,
+  appointments,
+  appointmentId,
 }: AppointmentScheduleFieldsProps) => {
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="space-y-3">
       <FormField
         control={form.control}
         name="date"
         render={({ field }) => (
           <FormItem className="flex flex-col">
-            <FormLabel>Date</FormLabel>
+            <FormLabel className="text-sm">Date</FormLabel>
             <Popover>
               <PopoverTrigger asChild>
                 <FormControl>
                   <Button
                     variant={"outline"}
                     className={cn(
-                      "pl-3 text-left font-normal",
+                      "pl-3 text-left font-normal w-full h-9 text-sm",
                       !field.value && "text-muted-foreground"
                     )}
                   >
@@ -69,80 +73,173 @@ export const AppointmentScheduleFields = ({
                   selected={field.value}
                   onSelect={field.onChange}
                   initialFocus
-                  className="p-3 pointer-events-auto"
+                  className="p-2 pointer-events-auto"
                 />
               </PopoverContent>
             </Popover>
-            <FormMessage />
+            <FormMessage className="text-xs" />
           </FormItem>
         )}
       />
 
-      <FormField
-        control={form.control}
-        name="time"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Start Time</FormLabel>
-            <Select
-              onValueChange={(value) => {
-                field.onChange(value);
-                onStartTimeChange(value);
-              }}
-              value={field.value || "09:00"} // Provide a default value if field.value is empty
-            >
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a start time" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {timeSlots.map((slot) => (
-                  <SelectItem key={slot.value} value={slot.value}>
-                    {slot.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      <div className="grid grid-cols-2 gap-3">
+        <FormField
+          control={form.control}
+          name="time"
+          render={({ field }) => {
+            // Get selected date
+            const selectedDate = form.getValues("date");
+            // Exclude current appointment
+            const filteredAppointments = appointments.filter(appt => {
+              if (appointmentId && (appt.id === appointmentId)) return false;
+              // Compare by date (ignore time)
+              return appt.start && selectedDate &&
+                appt.start.getFullYear() === selectedDate.getFullYear() &&
+                appt.start.getMonth() === selectedDate.getMonth() &&
+                appt.start.getDate() === selectedDate.getDate();
+            });
+            // For each slot, check if it overlaps with any appointment
+            function isSlotDisabled(slotValue: string) {
+              const [slotHour, slotMinute] = slotValue.split(":").map(Number);
+              const slotStart = slotHour * 60 + slotMinute;
+              // Check overlap with any appointment
+              return filteredAppointments.some(appt => {
+                const apptStart = appt.start.getHours() * 60 + appt.start.getMinutes();
+                const apptEnd = appt.end.getHours() * 60 + appt.end.getMinutes();
+                // Slot start must not be within any appointment
+                return slotStart >= apptStart && slotStart < apptEnd;
+              });
+            }
+            return (
+              <FormItem>
+                <FormLabel className="text-sm">Start Time</FormLabel>
+                <Select
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    onStartTimeChange(value);
+                  }}
+                  value={field.value || "09:00"}
+                >
+                  <FormControl>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Start time" className="text-sm" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent className="max-h-[200px]">
+                    {timeSlots.filter(slot => !isSlotDisabled(slot.value)).map((slot) => (
+                      <SelectItem
+                        key={slot.value}
+                        value={slot.value}
+                        className="text-sm"
+                      >
+                        {slot.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage className="text-xs" />
+              </FormItem>
+            );
+          }}
+        />
 
-      <FormField
-        control={form.control}
-        name="endTime"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>End Time</FormLabel>
-            <Select
-              onValueChange={(value) => {
-                field.onChange(value);
-                onEndTimeChange(value);
-              }}
-              value={field.value || "10:00"} // Provide a default value if field.value is empty
-            >
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select an end time" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {timeSlots.map((slot) => (
-                  <SelectItem key={slot.value} value={slot.value}>
-                    {slot.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+        <FormField
+          control={form.control}
+          name="endTime"
+          render={({ field }) => {
+            const selectedDate = form.getValues("date");
+            const startTime = form.getValues("time") || "00:00";
+            const [startHour, startMinute] = startTime.split(":").map(Number);
+            const startTotalMinutes = startHour * 60 + startMinute;
+            // Exclude current appointment
+            const filteredAppointments = appointments.filter(appt => {
+              if (appointmentId && (appt.id === appointmentId)) return false;
+              return appt.start && selectedDate &&
+                appt.start.getFullYear() === selectedDate.getFullYear() &&
+                appt.start.getMonth() === selectedDate.getMonth() &&
+                appt.start.getDate() === selectedDate.getDate();
+            });
+            // Find the next appointment after the selected start time
+            const nextAppt = filteredAppointments
+              .map(appt => ({
+                start: appt.start.getHours() * 60 + appt.start.getMinutes(),
+                end: appt.end.getHours() * 60 + appt.end.getMinutes()
+              }))
+              .filter(appt => appt.start > startTotalMinutes)
+              .sort((a, b) => a.start - b.start)[0];
+            // For each slot, check if it should be disabled
+            function isEndSlotDisabled(slotValue: string) {
+              const [slotHour, slotMinute] = slotValue.split(":").map(Number);
+              const slotMinutes = slotHour * 60 + slotMinute;
+              // End time must be strictly after start time
+              if (slotMinutes <= startTotalMinutes) return true;
+              // If next appointment exists, disable slots after its start (open interval logic)
+              if (nextAppt && slotMinutes > nextAppt.start) return true;
+              // Also, do not allow overlap with any existing appointment
+              return filteredAppointments.some(appt => {
+                const apptStart = appt.start.getHours() * 60 + appt.start.getMinutes();
+                const apptEnd = appt.end.getHours() * 60 + appt.end.getMinutes();
+                return slotMinutes > apptStart && slotMinutes <= apptEnd;
+              });
+            }
+            const filteredSlots = timeSlots.filter(slot => !isEndSlotDisabled(slot.value));
+            // If current end time is not valid, reset to next available
+            if (field.value) {
+              const [endHour, endMinute] = field.value.split(":").map(Number);
+              const endTotalMinutes = endHour * 60 + endMinute;
+              if (isEndSlotDisabled(field.value) && filteredSlots.length > 0) {
+                setTimeout(() => field.onChange(filteredSlots[0].value), 0);
+              }
+            }
+            return (
+              <FormItem>
+                <FormLabel className="text-sm">End Time</FormLabel>
+                <Select
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    onEndTimeChange(value);
+                  }}
+                  value={field.value || (filteredSlots[0] && filteredSlots[0].value) || ""}
+                >
+                  <FormControl>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="End time" className="text-sm" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent className="max-h-[200px]">
+                    {(() => {
+                      const availableSlots = timeSlots.filter(slot => !isEndSlotDisabled(slot.value));
+                      return (
+                        <>
+                          {availableSlots.map((slot) => (
+                            <SelectItem
+                              key={slot.value}
+                              value={slot.value}
+                              className="text-sm"
+                            >
+                              {slot.label}
+                            </SelectItem>
+                          ))}
+                          {nextAppt && availableSlots.length > 0 && (
+                            <SelectItem disabled value="next-appointment" className="text-muted-foreground text-xs cursor-not-allowed opacity-50">
+                              Next appointment
+                            </SelectItem>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </SelectContent>
+                </Select>
+                <FormMessage className="text-xs" />
+              </FormItem>
+            );
+          }}
+        />
+      </div>
 
       <FormItem>
-        <FormLabel>Duration</FormLabel>
-        <div className="h-10 px-4 py-2 border rounded-md flex items-center">
+        <FormLabel className="text-sm">Duration</FormLabel>
+        <div className="h-9 px-3 py-1 border rounded-md flex items-center text-sm">
           <span>{serviceDuration} minutes</span>
         </div>
       </FormItem>

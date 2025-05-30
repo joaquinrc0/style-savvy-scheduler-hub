@@ -13,4 +13,4 @@ class Command(BaseCommand):
         if not created and invite.used:
             invite.used = False
             invite.save()
-        self.stdout.write(f"Token para {email}: {invite.token}")
+        self.stdout.write(f"Token para {email}: localhost:8080/register?token={invite.token}")

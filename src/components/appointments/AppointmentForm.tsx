@@ -413,19 +413,19 @@ export function AppointmentForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto p-4">
+        <DialogHeader className="pb-2">
           <DialogTitle>
             {appointmentId ? "Edit Appointment" : "New Appointment"}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm">
             {appointmentId
               ? "Update the appointment details below"
               : "Fill in the details to schedule a new appointment"}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
             <AppointmentClientField
               form={form}
               clients={clients}
@@ -452,26 +452,40 @@ export function AppointmentForm({
               shouldUpdateEndTime={shouldUpdateEndTime}
               onStartTimeChange={handleStartTimeChange}
               onEndTimeChange={handleEndTimeChange}
+              appointments={appointments}
+              appointmentId={appointmentId}
             />
             
             <AppointmentNotesField form={form} />
             
-            <DialogFooter>
+            <DialogFooter className="pt-2 pb-1">
               <div className="flex justify-between w-full">
                 {appointmentId && (
                   <Button 
                     type="button" 
                     variant="destructive" 
                     onClick={handleDeleteAppointment}
+                    size="sm"
+                    className="text-sm h-9"
                   >
                     Delete
                   </Button>
                 )}
                 <div className="flex space-x-2">
-                  <Button type="button" variant="outline" onClick={onClose}>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={onClose}
+                    size="sm"
+                    className="text-sm h-9"
+                  >
                     Cancel
                   </Button>
-                  <Button type="submit" className="bg-salon-600 hover:bg-salon-700">
+                  <Button 
+                    type="submit" 
+                    className="bg-salon-600 hover:bg-salon-700 text-sm h-9"
+                    size="sm"
+                  >
                     {appointmentId ? "Update" : "Create"}
                   </Button>
                 </div>

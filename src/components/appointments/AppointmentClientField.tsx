@@ -22,7 +22,7 @@ export const AppointmentClientField = ({
       name="clientId"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Client</FormLabel>
+          <FormLabel className="text-sm">Client</FormLabel>
           <Select
             onValueChange={(value) => {
               console.log('Client selection changed to:', value);
@@ -40,19 +40,19 @@ export const AppointmentClientField = ({
             defaultValue={field.value || ""}
           >
             <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a client" />
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Select a client" className="text-sm" />
               </SelectTrigger>
             </FormControl>
-            <SelectContent>
+            <SelectContent className="max-h-[200px]">
               {clients.map((client) => (
-                <SelectItem key={client.id} value={client.id}>
+                <SelectItem key={client.id} value={client.id} className="text-sm">
                   {client.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <FormMessage />
+          <FormMessage className="text-xs" />
         </FormItem>
       )}
     />
