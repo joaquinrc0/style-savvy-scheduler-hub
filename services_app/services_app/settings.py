@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'appointments.apps.AppointmentsConfig',
     'clients.apps.ClientsConfig',
+    'stylists.apps.StylistsConfig',
 ]
 
 MIDDLEWARE = [

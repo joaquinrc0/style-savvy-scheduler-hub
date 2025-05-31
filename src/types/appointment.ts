@@ -1,3 +1,4 @@
+import { Stylist } from "@/services/stylistsApi";
 
 export type AppointmentStatus = 'scheduled' | 'completed' | 'cancelled' | 'no-show';
 
@@ -27,6 +28,7 @@ export type Appointment = {
   serviceId: string;
   service: Service;
   stylistId: string;
+  stylist?: Stylist;  // Add stylist object reference
   start: Date;
   end: Date;
   status: AppointmentStatus;

@@ -1,5 +1,6 @@
 // src/services/appointmentService.ts
 import { Appointment, AppointmentFormData } from "@/types/appointment";
+import stylistsApi, { Stylist } from "./stylistsApi";
 
 // Make sure this URL matches exactly how the endpoint is configured in Django
 // For development, point directly to the Django server
@@ -11,7 +12,19 @@ const getAuthToken = (): string | null => {
 };
 
 // Helper to parse dates from API response and map fields
-const parseAppointmentFromAPI = (apiAppointment: any): Appointment => {
+const parseAppointmentFromAPI = async (apiAppointment: any): Promise<Appointment> => {
+  let stylist: Stylist | undefined;
+  
+  // If we have a stylist_id, try to fetch the stylist data
+  if (apiAppointment.stylist_id) {
+    try {
+      stylist = await stylistsApi.getStylist(apiAppointment.stylist_id.toString());
+    } catch (error) {
+      console.error(`Error fetching stylist data for id ${apiAppointment.stylist_id}:`, error);
+      // Continue with no stylist data rather than failing the whole appointment
+    }
+  }
+  
   return {
     id: apiAppointment.id.toString(),
     title: apiAppointment.title, 
@@ -29,7 +42,8 @@ const parseAppointmentFromAPI = (apiAppointment: any): Appointment => {
       duration: differenceInMinutes(new Date(apiAppointment.end_time), new Date(apiAppointment.start_time)),
       price: 0,
     },
-    stylistId: apiAppointment.stylist_id?.toString() || "", 
+    stylistId: apiAppointment.stylist_id?.toString() || "",
+    stylist,  // Include the fetched stylist data if available
     start: new Date(apiAppointment.start_time),
     end: new Date(apiAppointment.end_time),
     status: apiAppointment.status || 'scheduled',
@@ -186,7 +200,15 @@ export const fetchAppointments = async (): Promise<Appointment[]> => {
     
     const data = await response.json();
     // If data is empty array, that's fine, just return empty list
-    return (data || []).map(parseAppointmentFromAPI);
+    
+    // Process each appointment sequentially to include stylist data
+    const appointments: Appointment[] = [];
+    for (const appointmentData of data || []) {
+      const appointment = await parseAppointmentFromAPI(appointmentData);
+      appointments.push(appointment);
+    }
+    
+    return appointments;
   } catch (error) {
     console.error("Error fetching appointments:", error);
     throw error;

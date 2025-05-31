@@ -3,7 +3,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format, addMinutes } from "date-fns";
 import { useAppointments } from "@/contexts/AppointmentContext";
-import { clients, services, stylists } from "@/data/mockData";
+import { useStylists } from "@/contexts/StylistContext";
+import { clients, services } from "@/data/mockData";
 import { AppointmentFormData } from "@/types/appointment";
 import { useToast } from "@/hooks/use-toast";
 
@@ -39,6 +40,7 @@ export function AppointmentForm({
   appointmentId,
 }: AppointmentFormProps) {
   const { addAppointment, updateAppointment, deleteAppointment, getAppointmentById, appointments } = useAppointments();
+  const { stylists } = useStylists();
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [serviceDuration, setServiceDuration] = useState(60); // Default 60 minutes

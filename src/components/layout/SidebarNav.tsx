@@ -46,6 +46,7 @@ export const navigationItems = [
   { name: 'Appointments', href: '/appointments', icon: Calendar },
   { name: 'Clients', href: '/clients', icon: Users },
   { name: 'Services', href: '/services', icon: Scissors },
+  { name: 'Stylists', href: '/stylists', icon: Users },
 ];
 
 export default function SidebarNav() {

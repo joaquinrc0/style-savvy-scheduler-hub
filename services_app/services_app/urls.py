@@ -21,5 +21,6 @@ urlpatterns = [
         path("api/token/", include(jwt_urls)),  # JWT endpoints
         path("api/", include("appointments.urls")),  # Appointments API endpoints
         path("api/", include("clients.urls")),  # Clients API endpoints
+        path("api/", include("stylists.urls")),  # Stylists API endpoints
     ])),
 ]

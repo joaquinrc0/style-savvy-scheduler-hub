@@ -12,6 +12,7 @@ import Index from "./pages/Index";
 import Appointments from "./pages/Appointments";
 import Clients from "./pages/Clients";
 import Services from "./pages/Services";
+import Stylists from "./pages/Stylists"; // Import Stylists
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -73,6 +74,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Services />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/stylists"
+            element={
+              <ProtectedRoute>
+                <Stylists />
               </ProtectedRoute>
             }
           />

@@ -2,10 +2,11 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/comp
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UseFormReturn } from "react-hook-form";
 import { AppointmentFormType } from "./AppointmentFormConfig.tsx";
+import { Stylist } from "@/services/stylistsApi";
 
 interface AppointmentStylistFieldProps {
   form: UseFormReturn<AppointmentFormType>;
-  stylists: any[];
+  stylists: Stylist[];
   disabled?: boolean;
 }
 
