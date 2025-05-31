@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Calendar, Users, Scissors, LineChart, ChevronRight, Settings, LogOut } from "lucide-react";
+import { Calendar, Users, Scissors, LineChart, ChevronRight, Settings, LogOut, UserRound } from "lucide-react";
 import { services } from "@/data/mockData";
 
 export default function Index() {
@@ -70,7 +70,7 @@ export default function Index() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
           <FeatureCard 
             icon={<Calendar className="h-10 w-10 text-salon-600" />}
             title="Appointment Scheduling"
@@ -82,6 +82,12 @@ export default function Index() {
             title="Client Management"
             description="Store client information, preferences, and appointment history"
             linkTo="/clients"
+          />
+          <FeatureCard 
+            icon={<UserRound className="h-10 w-10 text-salon-600" />}
+            title="Stylist Management"
+            description="Manage your stylists and their specialties"
+            linkTo="/stylists"
           />
           <FeatureCard 
             icon={<Scissors className="h-10 w-10 text-salon-600" />}

@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Pages
 import Login from "./pages/Login";
@@ -22,14 +23,11 @@ import Contact from "./pages/Contact"; // Import Contact
 
 const queryClient = new QueryClient();
 
-// Simple auth check - replace with your actual auth logic
-const isAuthenticated = () => {
-  return localStorage.getItem("isAuthenticated") === "true";
-};
-
-// Protected Route component
+// Protected Route component that uses AuthContext
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  if (!isAuthenticated()) {
+  const { isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
   return <>{children}</>;

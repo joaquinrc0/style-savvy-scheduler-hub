@@ -8,6 +8,7 @@ import {
   deleteAppointmentAPI
 } from "@/services/appointmentService"; // Adjusted path
 import { useToast } from "@/hooks/use-toast"; // Import useToast
+import { useStylists } from "@/contexts/StylistContext";
 
 type AppointmentContextType = {
   appointments: Appointment[];
@@ -36,12 +37,13 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { stylists } = useStylists();
 
   const loadAppointments = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const fetchedAppointments = await fetchAppointments();
+      const fetchedAppointments = await fetchAppointments(stylists);
       setAppointments(fetchedAppointments);
     } catch (err: any) {
       console.error("Failed to fetch appointments:", err);
@@ -58,11 +60,12 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     loadAppointments();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stylists]);
 
   const addAppointment = async (data: AppointmentFormData) => {
     try {
-      const newAppointment = await createAppointmentAPI(data);
+      const newAppointment = await createAppointmentAPI(data, stylists);
       setAppointments(prev => [...prev, newAppointment]);
       toast({
         title: "Appointment Created",
@@ -82,7 +85,7 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
 
   const updateAppointment = async (id: string, data: Partial<AppointmentFormData> | Partial<Appointment>) => {
     try {
-      const updatedAppointmentData = await updateAppointmentAPI(id, data);
+      const updatedAppointmentData = await updateAppointmentAPI(id, data, stylists);
       setAppointments(prev => 
         prev.map(app => app.id === id ? updatedAppointmentData : app)
       );

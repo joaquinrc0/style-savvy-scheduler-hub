@@ -9,7 +9,8 @@ import {
   Settings, 
   Menu,
   X,
-  LayoutDashboard
+  LayoutDashboard,
+  UserRound
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -59,6 +60,7 @@ export default function SidebarNav() {
     { to: "/appointments", icon: Calendar, label: "Appointments" },
     { to: "/clients", icon: Users, label: "Clients" },
     { to: "/services", icon: Scissors, label: "Services" },
+    { to: "/stylists", icon: UserRound, label: "Stylists" },
     { to: "/dashboard", icon: LineChart, label: "Dashboard" },
   ];
 

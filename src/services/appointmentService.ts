@@ -1,30 +1,20 @@
 // src/services/appointmentService.ts
 import { Appointment, AppointmentFormData } from "@/types/appointment";
 import stylistsApi, { Stylist } from "./stylistsApi";
+import { API_BASE_URL } from "@/config";
 
-// Make sure this URL matches exactly how the endpoint is configured in Django
-// For development, point directly to the Django server
-const API_BASE_URL = "http://127.0.0.1:8000/django/api"; // Django server runs on port 8000
-
-// Helper to get the auth token
-const getAuthToken = (): string | null => {
-  return localStorage.getItem("authToken");
-};
+// Use the centralized API configuration
+const APPOINTMENTS_API_URL = `${API_BASE_URL}/api`;
 
 // Helper to parse dates from API response and map fields
-const parseAppointmentFromAPI = async (apiAppointment: any): Promise<Appointment> => {
-  let stylist: Stylist | undefined;
-  
-  // If we have a stylist_id, try to fetch the stylist data
-  if (apiAppointment.stylist_id) {
-    try {
-      stylist = await stylistsApi.getStylist(apiAppointment.stylist_id.toString());
-    } catch (error) {
-      console.error(`Error fetching stylist data for id ${apiAppointment.stylist_id}:`, error);
-      // Continue with no stylist data rather than failing the whole appointment
-    }
-  }
-  
+const parseAppointmentFromAPI = (
+  apiAppointment: any,
+  stylists: Stylist[]
+): Appointment => {
+  const stylist = stylists.find(
+    s => s.id === apiAppointment.stylist_id?.toString()
+  );
+
   return {
     id: apiAppointment.id.toString(),
     title: apiAppointment.title, 
@@ -170,19 +160,17 @@ const differenceInMinutes = (dateLeft: Date, dateRight: Date): number => {
 };
 
 // Fetch all appointments
-export const fetchAppointments = async (): Promise<Appointment[]> => {
-  const token = getAuthToken();
+export const fetchAppointments = async (stylists: Stylist[]): Promise<Appointment[]> => {
   try {
     // Log the URL we're fetching from for debugging
-    console.log(`Fetching appointments from: ${API_BASE_URL}/appointments/`);
+    console.log(`Fetching appointments from: ${APPOINTMENTS_API_URL}/appointments/`);
     
-    const response = await fetch(`${API_BASE_URL}/appointments/`, {
+    const response = await fetch(`${APPOINTMENTS_API_URL}/appointments/`, {
       method: 'GET',
       credentials: 'include', // Include cookies for session authentication
       headers: {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
       },
     });
     
@@ -204,7 +192,7 @@ export const fetchAppointments = async (): Promise<Appointment[]> => {
     // Process each appointment sequentially to include stylist data
     const appointments: Appointment[] = [];
     for (const appointmentData of data || []) {
-      const appointment = await parseAppointmentFromAPI(appointmentData);
+      const appointment = parseAppointmentFromAPI(appointmentData, stylists);
       appointments.push(appointment);
     }
     
@@ -216,20 +204,18 @@ export const fetchAppointments = async (): Promise<Appointment[]> => {
 };
 
 // Create a new appointment
-export const createAppointment = async (appointmentData: AppointmentFormData): Promise<Appointment> => {
-  const token = getAuthToken();
+export const createAppointment = async (appointmentData: AppointmentFormData, stylists: Stylist[]): Promise<Appointment> => {
   const apiData = prepareAppointmentForAPI(appointmentData);
 
   try {
-    console.log(`Creating appointment at: ${API_BASE_URL}/appointments/`, apiData);
+    console.log(`Creating appointment at: ${APPOINTMENTS_API_URL}/appointments/`, apiData);
     
-    const response = await fetch(`${API_BASE_URL}/appointments/`, {
+    const response = await fetch(`${APPOINTMENTS_API_URL}/appointments/`, {
       method: "POST",
       credentials: 'include',
       headers: {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
       },
       body: JSON.stringify(apiData),
     });
@@ -248,7 +234,7 @@ export const createAppointment = async (appointmentData: AppointmentFormData): P
     }
     
     const data = await response.json();
-    return parseAppointmentFromAPI(data);
+    return parseAppointmentFromAPI(data, stylists);
   } catch (error) {
     console.error("Error creating appointment:", error);
     throw error;
@@ -256,20 +242,18 @@ export const createAppointment = async (appointmentData: AppointmentFormData): P
 };
 
 // Update an existing appointment
-export const updateAppointmentAPI = async (id: string, appointmentData: Partial<AppointmentFormData> | Partial<Appointment>): Promise<Appointment> => {
-  const token = getAuthToken();
+export const updateAppointmentAPI = async (id: string, appointmentData: Partial<AppointmentFormData> | Partial<Appointment>, stylists: Stylist[]): Promise<Appointment> => {
   const apiData = prepareAppointmentForAPI(appointmentData);
 
   try {
-    console.log(`Updating appointment at: ${API_BASE_URL}/appointments/${id}/`, apiData);
+    console.log(`Updating appointment at: ${APPOINTMENTS_API_URL}/appointments/${id}/`, apiData);
     
-    const response = await fetch(`${API_BASE_URL}/appointments/${id}/`, {
+    const response = await fetch(`${APPOINTMENTS_API_URL}/appointments/${id}/`, {
       method: "PUT",
       credentials: 'include',
       headers: {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
       },
       body: JSON.stringify(apiData),
     });
@@ -288,7 +272,7 @@ export const updateAppointmentAPI = async (id: string, appointmentData: Partial<
     }
     
     const data = await response.json();
-    return parseAppointmentFromAPI(data);
+    return parseAppointmentFromAPI(data, stylists);
   } catch (error) {
     console.error("Error updating appointment:", error);
     throw error;
@@ -297,18 +281,15 @@ export const updateAppointmentAPI = async (id: string, appointmentData: Partial<
 
 // Delete an appointment
 export const deleteAppointmentAPI = async (id: string): Promise<void> => {
-  const token = getAuthToken();
-  
   try {
-    console.log(`Deleting appointment at: ${API_BASE_URL}/appointments/${id}/`);
+    console.log(`Deleting appointment at: ${APPOINTMENTS_API_URL}/appointments/${id}/`);
     
-    const response = await fetch(`${API_BASE_URL}/appointments/${id}/`, {
+    const response = await fetch(`${APPOINTMENTS_API_URL}/appointments/${id}/`, {
       method: "DELETE",
       credentials: 'include',
       headers: {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
       },
     });
     
