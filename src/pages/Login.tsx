@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as zod from "zod";
@@ -30,10 +30,15 @@ const loginSchema = zod.object({
 });
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Parse returnTo from URL query parameters
+  const searchParams = new URLSearchParams(location.search);
+  const returnTo = searchParams.get('returnTo') || '/';
 
   const form = useForm<zod.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -43,11 +48,18 @@ export default function LoginPage() {
     },
   });
 
+  // Redirect to returnTo if user is already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(returnTo);
+    }
+  }, [isAuthenticated, navigate, returnTo]);
+
   const onSubmit = async (data: zod.infer<typeof loginSchema>) => {
     setIsLoading(true);
     try {
       await login(data.email, data.password);
-      navigate("/"); // Explicitly navigate after successful login
+      navigate(returnTo); // Navigate to original requested page after login
       toast({
         title: "Success",
         description: "Welcome back!",

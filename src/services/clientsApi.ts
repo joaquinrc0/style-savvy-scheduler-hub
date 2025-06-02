@@ -1,5 +1,21 @@
 import axios from 'axios';
 
+// Helper function to get CSRF token from cookies
+function getCsrfToken() {
+  const cookies = document.cookie.split(';');
+  for (let cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === 'csrftoken') {
+      return value;
+    }
+  }
+  return '';
+}
+
+// Configure axios defaults
+axios.defaults.withCredentials = true; // Send cookies with requests
+axios.defaults.headers.common['X-CSRFToken'] = getCsrfToken();
+
 // Define types for the client data
 export interface Client {
   id?: number;

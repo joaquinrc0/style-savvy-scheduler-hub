@@ -1,12 +1,13 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Search, Plus, Edit, Trash, ChevronDown, Clock, DollarSign } from "lucide-react";
-import { services as initialServices } from "@/data/mockData";
 import { Service } from "@/types/appointment";
 import PageLayout from "@/components/layout/PageLayout";
+import { fetchServices, createService, updateService, deleteService } from "@/services/serviceApi";
+import { toast } from "@/components/ui/use-toast";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -45,9 +46,33 @@ const formSchema = z.object({
 
 export default function ServicesPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [serviceList, setServiceList] = useState<Service[]>(initialServices);
+  const [serviceList, setServiceList] = useState<Service[]>([]);
   const [isAddServiceOpen, setIsAddServiceOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Fetch services on component mount
+  useEffect(() => {
+    const loadServices = async () => {
+      setIsLoading(true);
+      try {
+        const services = await fetchServices();
+        setServiceList(services);
+      } catch (error) {
+        console.error("Failed to load services:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load services. Please try again later.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadServices();
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -68,18 +93,33 @@ export default function ServicesPage() {
     service.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleAddService = (data: z.infer<typeof formSchema>) => {
-    const newService: Service = {
-      id: `service-${Date.now()}`,
-      name: data.name,
-      description: data.description,
-      duration: data.duration,
-      price: data.price,
-    };
+  const handleAddService = async (data: z.infer<typeof formSchema>) => {
+    setIsSubmitting(true);
+    try {
+      const newService = await createService({
+        name: data.name,
+        description: data.description,
+        duration: data.duration,
+        price: data.price,
+      });
 
-    setServiceList([...serviceList, newService]);
-    form.reset();
-    setIsAddServiceOpen(false);
+      setServiceList([...serviceList, newService]);
+      toast({
+        title: "Success",
+        description: "Service created successfully"
+      });
+      form.reset();
+      setIsAddServiceOpen(false);
+    } catch (error) {
+      console.error("Failed to create service:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create service. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEditService = (service: Service) => {
@@ -93,27 +133,57 @@ export default function ServicesPage() {
     setIsAddServiceOpen(true);
   };
 
-  const handleUpdateService = (data: z.infer<typeof formSchema>) => {
+  const handleUpdateService = async (data: z.infer<typeof formSchema>) => {
     if (selectedService) {
-      const updatedServices = serviceList.map((service) =>
-        service.id === selectedService.id
-          ? {
-              ...service,
-              name: data.name,
-              description: data.description,
-              duration: data.duration,
-              price: data.price,
-            }
-          : service
-      );
-      setServiceList(updatedServices);
-      setSelectedService(null);
-      setIsAddServiceOpen(false);
+      setIsSubmitting(true);
+      try {
+        const updatedService = await updateService(selectedService.id, {
+          name: data.name,
+          description: data.description,
+          duration: data.duration,
+          price: data.price,
+        });
+
+        const updatedServices = serviceList.map((service) =>
+          service.id === selectedService.id ? updatedService : service
+        );
+        
+        setServiceList(updatedServices);
+        toast({
+          title: "Success",
+          description: "Service updated successfully"
+        });
+        setSelectedService(null);
+        setIsAddServiceOpen(false);
+      } catch (error) {
+        console.error("Failed to update service:", error);
+        toast({
+          title: "Error",
+          description: "Failed to update service. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
-  const handleDeleteService = (id: string) => {
-    setServiceList(serviceList.filter((service) => service.id !== id));
+  const handleDeleteService = async (id: string) => {
+    try {
+      await deleteService(id);
+      setServiceList(serviceList.filter((service) => service.id !== id));
+      toast({
+        title: "Success",
+        description: "Service deleted successfully"
+      });
+    } catch (error) {
+      console.error("Failed to delete service:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete service. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleSubmit = (data: z.infer<typeof formSchema>) => {
@@ -176,7 +246,11 @@ export default function ServicesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredServices.length > 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8">Loading services...</TableCell>
+                  </TableRow>
+                ) : filteredServices.length > 0 ? (
                   filteredServices.map((service) => (
                     <TableRow key={service.id}>
                       <TableCell className="font-medium">{service.name}</TableCell>
@@ -314,8 +388,8 @@ export default function ServicesPage() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" className="bg-salon-600 hover:bg-salon-700">
-                  {selectedService ? "Update" : "Create"}
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Saving..." : "Save Service"}
                 </Button>
               </DialogFooter>
             </form>

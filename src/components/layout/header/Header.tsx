@@ -1,13 +1,15 @@
 import { Link, useNavigate } from "react-router-dom";
 import { LogOut, Settings } from "lucide-react"; // Add Settings import
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function Header() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
-    navigate("/login");
+    logout();
+    // Navigation will be handled by AuthContext's logout function
   };
 
   return (

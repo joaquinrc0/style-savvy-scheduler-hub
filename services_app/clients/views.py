@@ -1,4 +1,5 @@
 from rest_framework import viewsets, permissions, filters
+from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
 from .models import Client
 from .serializers import ClientSerializer
@@ -8,9 +9,8 @@ class ClientViewSet(viewsets.ModelViewSet):
     queryset = Client.objects.all()
     serializer_class = ClientSerializer
     
-    # For development, disable authentication and permissions
-    authentication_classes = []
-    permission_classes = [permissions.AllowAny]
+    # Require authentication
+    permission_classes = [IsAuthenticated]
     
     # Add filtering and search capabilities
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]

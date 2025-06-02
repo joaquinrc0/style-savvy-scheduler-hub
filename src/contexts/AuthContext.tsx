@@ -1,18 +1,24 @@
 import React from 'react';
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { API_BASE_URL } from '../config';
-import { toast } from "@/components/ui/use-toast";
+import { createContext, useContext, useState, useEffect } from "react";
+import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface AuthContextType {
   isAuthenticated: boolean;
+  isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  checkAuth: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(localStorage.getItem("isAuthenticated") === "true");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
   const login = async (email: string, password: string) => {
     try {
@@ -69,34 +75,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsAuthenticated(false);
     localStorage.removeItem("isAuthenticated");
     toast({ title: "Logged out", description: "You have been logged out.", variant: "default" });
+    // Navigate to login page after logout
+    navigate('/login');
   };
 
-  // Check authentication status on mount
-  React.useEffect(() => {
-    // On mount, check backend session if localStorage says authenticated
-    const checkAuth = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/user/`, {
-          credentials: 'include',
-        });
-        const data = await response.json();
-        if (response.ok && data.isAuthenticated) {
-          setIsAuthenticated(true);
+  // Function to check authentication status
+  const checkAuth = async () => {
+    // If already authenticated based on localStorage, return true immediately
+    // This prevents unnecessary API calls and infinite loops
+    if (localStorage.getItem("isAuthenticated") === "true") {
+      return true;
+    }
+    
+    // Only set loading if not already loading
+    if (!isLoading) {
+      setIsLoading(true);
+    }
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/user/`, {
+        credentials: 'include',
+      });
+      const data = await response.json();
+      const isAuth = response.ok && data.isAuthenticated;
+      
+      // Only update state if it's different from current state
+      // This prevents unnecessary re-renders
+      if (isAuth !== isAuthenticated) {
+        setIsAuthenticated(isAuth);
+        if (isAuth) {
           localStorage.setItem("isAuthenticated", "true");
         } else {
-          setIsAuthenticated(false);
           localStorage.removeItem("isAuthenticated");
         }
-      } catch {
+      }
+      
+      return isAuth;
+    } catch (error) {
+      // Only update state if currently authenticated
+      // This prevents unnecessary re-renders
+      if (isAuthenticated) {
         setIsAuthenticated(false);
         localStorage.removeItem("isAuthenticated");
       }
-    };
-    checkAuth();
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Check authentication status on mount - but only if not already authenticated
+  // This prevents unnecessary API calls that could cause infinite loops
+  React.useEffect(() => {
+    if (localStorage.getItem("isAuthenticated") !== "true") {
+      checkAuth();
+    }
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, logout, checkAuth }}>
       {children}
     </AuthContext.Provider>
   );

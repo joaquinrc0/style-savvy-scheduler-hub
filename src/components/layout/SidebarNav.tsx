@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import { ProtectedLink } from "@/components/ProtectedLink";
 import { 
   Calendar, 
   Home, 
@@ -26,8 +27,11 @@ const NavItem = ({ to, icon: Icon, label, isCollapsed }: NavItemProps) => {
   const { pathname } = useLocation();
   const isActive = pathname === to;
 
+  // Use ProtectedLink for protected routes, regular Link for auth routes like login
+  const LinkComponent = to === "/login" || to === "/register" ? Link : ProtectedLink;
+
   return (
-    <Link
+    <LinkComponent
       to={to}
       className={cn(
         "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
@@ -38,7 +42,7 @@ const NavItem = ({ to, icon: Icon, label, isCollapsed }: NavItemProps) => {
     >
       <Icon className={cn("h-5 w-5", isCollapsed ? "mx-auto" : "")} />
       {!isCollapsed && <span>{label}</span>}
-    </Link>
+    </LinkComponent>
   );
 };
 
@@ -73,10 +77,10 @@ export default function SidebarNav() {
     >
       <div className="flex items-center justify-between px-4 py-4">
         {!isCollapsed && (
-          <Link to="/" className="flex items-center gap-2">
+          <ProtectedLink to="/" className="flex items-center gap-2">
             <Scissors className="h-6 w-6 text-salon-600" />
             <span className="text-xl font-semibold font-playfair">Belle Salon</span>
-          </Link>
+          </ProtectedLink>
         )}
         <Button
           variant="ghost"

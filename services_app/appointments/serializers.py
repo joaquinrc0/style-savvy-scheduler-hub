@@ -1,10 +1,15 @@
 from rest_framework import serializers
-from rest_framework import serializers
-from .models import Appointment
+from .models import Appointment, Service
 from clients.models import Client
 from clients.serializers import ClientSerializer
 from django.contrib.auth.models import User
 import datetime
+
+class ServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Service
+        fields = ['id', 'name', 'description', 'duration', 'price', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
 
 class AppointmentSerializer(serializers.ModelSerializer):
     # Make user optional - view will set it automatically
@@ -17,10 +22,14 @@ class AppointmentSerializer(serializers.ModelSerializer):
     client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all(), required=False, allow_null=True)
     client_details = ClientSerializer(source='client', read_only=True)
     
+    # Add service serialization
+    service = serializers.PrimaryKeyRelatedField(queryset=Service.objects.all(), required=False, allow_null=True)
+    service_details = ServiceSerializer(source='service', read_only=True)
+    
     class Meta:
         model = Appointment
         fields = ['id', 'user', 'client', 'client_details', 'title', 'start_time', 'end_time', 
-                 'description', 'service_id', 'stylist_id', 'status', 'created_at', 'updated_at']
+                 'description', 'service', 'service_details', 'stylist_id', 'status', 'created_at', 'updated_at']
         read_only_fields = ['created_at', 'updated_at']
 
     def validate(self, data):

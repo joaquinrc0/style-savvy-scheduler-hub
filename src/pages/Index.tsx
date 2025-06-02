@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar, Users, Scissors, LineChart, ChevronRight, Settings, LogOut, UserRound } from "lucide-react";
@@ -7,9 +8,11 @@ import { services } from "@/data/mockData";
 export default function Index() {
   const navigate = useNavigate();
 
+  const { logout } = useAuth();
+
   const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
-    navigate("/login");
+    logout();
+    // Navigation will be handled by AuthContext's logout function
   };
 
   return (
