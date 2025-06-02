@@ -1,5 +1,4 @@
-from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import viewsets, permissions, filters
 from .models import Stylist
 from .serializers import StylistSerializer
 
@@ -9,7 +8,10 @@ class StylistViewSet(viewsets.ModelViewSet):
     """
     queryset = Stylist.objects.all()
     serializer_class = StylistSerializer
-    permission_classes = [IsAuthenticated]
+    
+    # For development, disable authentication and permissions
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
     
     def get_queryset(self):
         """

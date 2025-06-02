@@ -20,7 +20,7 @@ const stylistsApi = {
   // Get all stylists
   getStylists: async (): Promise<Stylist[]> => {
     try {
-      const response = await axios.get(`${STYLISTS_API_URL}/`, { withCredentials: true });
+      const response = await axios.get(`${STYLISTS_API_URL}/`);
       return response.data.map((stylist: any) => ({
         id: stylist.id.toString(),
         name: stylist.name,
@@ -38,7 +38,7 @@ const stylistsApi = {
   getStylist: async (id: string): Promise<Stylist> => {
     try {
       const numericId = id.replace(/^stylist-/, '');
-      const response = await axios.get(`${STYLISTS_API_URL}/${numericId}/`, { withCredentials: true });
+      const response = await axios.get(`${STYLISTS_API_URL}/${numericId}/`);
       const stylist = response.data;
       return {
         id: stylist.id.toString(),
@@ -56,7 +56,7 @@ const stylistsApi = {
   // Create a new stylist
   createStylist: async (stylistData: Omit<Stylist, 'id'>): Promise<Stylist> => {
     try {
-      const response = await axios.post(`${STYLISTS_API_URL}/`, stylistData, { withCredentials: true });
+      const response = await axios.post(`${STYLISTS_API_URL}/`, stylistData);
       const stylist = response.data;
       return {
         id: stylist.id.toString(),
@@ -75,7 +75,7 @@ const stylistsApi = {
   updateStylist: async (id: string, stylistData: Partial<Stylist>): Promise<Stylist> => {
     try {
       const numericId = id.replace(/^stylist-/, '');
-      const response = await axios.put(`${STYLISTS_API_URL}/${numericId}/`, stylistData, { withCredentials: true });
+      const response = await axios.put(`${STYLISTS_API_URL}/${numericId}/`, stylistData);
       const stylist = response.data;
       return {
         id: stylist.id.toString(),
@@ -94,7 +94,7 @@ const stylistsApi = {
   deleteStylist: async (id: string): Promise<void> => {
     try {
       const numericId = id.replace(/^stylist-/, '');
-      await axios.delete(`${STYLISTS_API_URL}/${numericId}/`, { withCredentials: true });
+      await axios.delete(`${STYLISTS_API_URL}/${numericId}/`);
     } catch (error) {
       console.error(`Error deleting stylist ${id}:`, error);
       throw error;
